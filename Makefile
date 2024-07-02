@@ -2,12 +2,6 @@
 
 # If you have the resampler library installed, add -DHAS_SRC to the CFLAGS line, and -lsamplerate to the LIBS line.
 
-CC      = cc
-CXX     = c++
-CFLAGS  = -g -O3 -Wall -std=c++0x -pthread -DHAVE_LOG_H -I/usr/local/include
-LIBS    = -lpthread -lutil
-LDFLAGS = -g -L/usr/local/lib
-
 CC      ?= cc
 CXX     ?= c++
 
@@ -147,10 +141,10 @@ OBJECTS := \
 all:		MMDVMHost RemoteCommand
 
 MMDVMHost:	GitVersion.h $(OBJECTS) 
-		$(CXX) $(OBJECTS) $(CFLAGS) $(LIBS) -o MMDVMHost
+		$(CXX) $(OBJECTS) $(LDFLAGS) $(LIBS) -o MMDVMHost
 
 RemoteCommand:	Log.o RemoteCommand.o UDPSocket.o
-		$(CXX) Log.o RemoteCommand.o UDPSocket.o $(CFLAGS) $(LIBS) -o RemoteCommand
+		$(CXX) Log.o RemoteCommand.o UDPSocket.o $(LDFLAGS) $(LIBS) -o RemoteCommand
 
 %.o: %.cpp
 		$(CXX) $(CFLAGS) -c -o $@ $<
