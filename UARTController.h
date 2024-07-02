@@ -17,28 +17,29 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef UARTController_H
-#define UARTController_H
+#ifndef UARTController_H_
+#define UARTController_H_
 
 #include "ModemPort.h"
 #include "SerialPort.h"
 
 #include <string>
 
-#if defined(_WIN32) || defined(_WIN64)
+#if (defined(_WIN32) || defined(_WIN64))
 #include <windows.h>
 #endif
 
-class CUARTController : public ISerialPort, public IModemPort {
+
+class CUARTController: public ISerialPort, public IModemPort {
 public:
-	CUARTController(const std::string& device, unsigned int speed, bool assertRTS = false);
+	CUARTController(const std::string &device, unsigned int speed, bool assertRTS = false);
 	virtual ~CUARTController();
 
 	virtual bool open();
 
-	virtual int read(unsigned char* buffer, unsigned int length);
+	virtual int read(unsigned char *buffer, unsigned int length);
 
-	virtual int write(const unsigned char* buffer, unsigned int length);
+	virtual int write(const unsigned char *buffer, unsigned int length);
 
 	virtual void close();
 
@@ -49,16 +50,16 @@ public:
 protected:
 	CUARTController(unsigned int speed, bool assertRTS = false);
 
-	std::string    m_device;
-	unsigned int   m_speed;
-	bool           m_assertRTS;
-#if defined(_WIN32) || defined(_WIN64)
-	HANDLE         m_handle;
+	std::string m_device;
+	unsigned int m_speed;
+	bool m_assertRTS;
+#if (defined(_WIN32) || defined(_WIN64))
+	HANDLE m_handle;
 #else
-	int            m_fd;
+	int m_fd;
 #endif
 
-#if defined(_WIN32) || defined(_WIN64)
+#if (defined(_WIN32) || defined(_WIN64))
 	int readNonblock(unsigned char* buffer, unsigned int length);
 #else
 	bool canWrite();
@@ -66,4 +67,5 @@ protected:
 #endif
 };
 
-#endif
+
+#endif	/* !UARTController_H_ */

@@ -2,6 +2,12 @@
 
 # If you have the resampler library installed, add -DHAS_SRC to the CFLAGS line, and -lsamplerate to the LIBS line.
 
+CC      = cc
+CXX     = c++
+CFLAGS  = -g -O3 -Wall -std=c++0x -pthread -DHAVE_LOG_H -I/usr/local/include
+LIBS    = -lpthread -lutil
+LDFLAGS = -g -L/usr/local/lib
+
 CC      ?= cc
 CXX     ?= c++
 

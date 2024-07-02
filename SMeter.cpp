@@ -19,19 +19,20 @@
 
 #include "SMeter.h"
 
+
 const unsigned int RSSI_S1 = 141U;
 const unsigned int RSSI_S9 = 93U;
 
-void CSMeter::getSignal(unsigned int rssi, unsigned int& signal, unsigned int& plus)
-{
-    if (rssi > RSSI_S1) {
-        signal = 0U;
-        plus = rssi - RSSI_S1;
-    } else if (rssi > RSSI_S9 && rssi <= RSSI_S1) {
-        signal = ((RSSI_S1 - rssi) / 6U) + 1U;
-        plus = (RSSI_S1 - rssi) % 6U;
-    } else {
-        signal = 9U;
-        plus = RSSI_S9 - rssi;
-    }
+
+void CSMeter::getSignal(unsigned int rssi, unsigned int &signal, unsigned int &plus) {
+	if (rssi > RSSI_S1) {
+		signal = 0U;
+		plus = rssi - RSSI_S1;
+	} else if (rssi > RSSI_S9 && rssi <= RSSI_S1) {
+		signal = ((RSSI_S1 - rssi) / 6U) + 1U;
+		plus = (RSSI_S1 - rssi) % 6U;
+	} else {
+		signal = 9U;
+		plus = RSSI_S9 - rssi;
+	}
 }

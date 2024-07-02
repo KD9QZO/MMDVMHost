@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015-2021 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015-2023 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -303,6 +303,8 @@ public:
   // The FM Network section
   bool         getFMNetworkEnabled() const;
   std::string  getFMNetworkProtocol() const;
+  unsigned int getFMNetworkSampleRate() const;
+  std::string  getFMNetworkSquelchFile() const;
   std::string  getFMGatewayAddress() const;
   unsigned short getFMGatewayPort() const;
   std::string  getFMLocalAddress() const;
@@ -323,6 +325,7 @@ public:
   // The TFTSERIAL section
   std::string  getTFTSerialPort() const;
   unsigned int getTFTSerialBrightness() const;
+  unsigned int getTFTSerialScreenLayout() const;
 
   // The HD44780 section
   unsigned int getHD44780Rows() const;
@@ -337,13 +340,15 @@ public:
   bool         getHD44780UTC() const;
 
   // The Nextion section
-  std::string  getNextionPort() const;
-  unsigned int getNextionBrightness() const;
-  bool         getNextionDisplayClock() const;
-  bool         getNextionUTC() const;
-  unsigned int getNextionIdleBrightness() const;
-  unsigned int getNextionScreenLayout() const;
-  bool         getNextionTempInFahrenheit() const;
+  std::string    getNextionPort() const;
+  unsigned int   getNextionBrightness() const;
+  bool           getNextionDisplayClock() const;
+  bool           getNextionUTC() const;
+  unsigned int   getNextionIdleBrightness() const;
+  unsigned int   getNextionScreenLayout() const;
+  bool           getNextionTempInFahrenheit() const;
+  bool           getNextionOutput() const;
+  unsigned short getNextionUDPPort() const;
 
   // The OLED section
   unsigned char  getOLEDType() const;
@@ -620,6 +625,8 @@ private:
 
   bool         m_fmNetworkEnabled;
   std::string  m_fmNetworkProtocol;
+  unsigned int m_fmNetworkSampleRate;
+  std::string  m_fmNetworkSquelchFile;
   std::string  m_fmGatewayAddress;
   unsigned short m_fmGatewayPort;
   std::string  m_fmLocalAddress;
@@ -638,6 +645,7 @@ private:
 
   std::string  m_tftSerialPort;
   unsigned int m_tftSerialBrightness;
+  unsigned int m_tftSerialScreenLayout;
 
   unsigned int m_hd44780Rows;
   unsigned int m_hd44780Columns;
@@ -650,13 +658,15 @@ private:
   bool         m_hd44780DisplayClock;
   bool         m_hd44780UTC;
 
-  std::string  m_nextionPort;
-  unsigned int m_nextionBrightness;
-  bool         m_nextionDisplayClock;
-  bool         m_nextionUTC;
-  unsigned int m_nextionIdleBrightness;
-  unsigned int m_nextionScreenLayout;
-  bool         m_nextionTempInFahrenheit;
+  std::string    m_nextionPort;
+  unsigned int   m_nextionBrightness;
+  bool           m_nextionDisplayClock;
+  bool           m_nextionUTC;
+  unsigned int   m_nextionIdleBrightness;
+  unsigned int   m_nextionScreenLayout;
+  bool           m_nextionTempInFahrenheit;
+  bool           m_nextionOutput;
+  unsigned short m_nextionUDPPort;
   
   unsigned char m_oledType;
   unsigned char m_oledBrightness;

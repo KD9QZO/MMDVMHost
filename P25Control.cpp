@@ -1,6 +1,6 @@
 /*
-*   Copyright (C) 2016-2019,2021 by Jonathan Naylor G4KLX
-*   Copyright (C) 2018 by Bryan Biedenkapp <gatekeep@gmail.com>
+*   Copyright (C) 2016-2019,2021,2024 by Jonathan Naylor G4KLX
+*   Copyright (C) 2018 by Bryan Biedenkapp <gatekeep@gmail.com> N2PLL
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -57,6 +57,7 @@ m_networkWatchdog(1000U, 0U, 1500U),
 m_rfFrames(0U),
 m_rfBits(0U),
 m_rfErrs(0U),
+// m_rfUndecodableLC(0U),
 m_netFrames(0U),
 m_netLost(0U),
 m_rfDataFrames(0U),
@@ -64,6 +65,8 @@ m_nid(nac),
 m_lastDUID(P25_DUID_TERM),
 m_audio(),
 m_rfData(),
+// m_rfLastLDU1(),
+// m_rfLastLDU2(),
 m_netData(),
 m_rfLSD(),
 m_netLSD(),
@@ -131,6 +134,8 @@ bool CP25Control::writeModem(unsigned char* data, unsigned int len)
 		else
 			LogMessage("P25, transmission lost from %s to %s%u, %.1f seconds, BER: %.1f%%", source.c_str(), grp ? "TG " : "", dstId, float(m_rfFrames) / 5.56F, float(m_rfErrs * 100U) / float(m_rfBits));
 
+		// LogMessage("P25, total frames: %d, bits: %d, undecodable LC: %d, errors: %d, BER: %.4f%%", m_rfFrames, m_rfBits, m_rfUndecodableLC, m_rfErrs, float(m_rfErrs * 100U) / float(m_rfBits));
+
 		if (m_netState == RS_NET_IDLE)
 			m_display->clearP25();
 
@@ -175,21 +180,21 @@ bool CP25Control::writeModem(unsigned char* data, unsigned int len)
 	unsigned char duid = m_nid.getDUID();
 	if (!valid) {
 		switch (m_lastDUID) {
-		case P25_DUID_HEADER:
-		case P25_DUID_LDU2:
-			duid = P25_DUID_LDU1;
-			break;
-		case P25_DUID_LDU1:
-			duid = P25_DUID_LDU2;
-			break;
-		case P25_DUID_PDU:
-			duid = P25_DUID_PDU;
-			break;
-		case P25_DUID_TSDU:
-			duid = P25_DUID_TSDU;
-			break;
-		default:
-			break;
+			case P25_DUID_HEADER:
+			case P25_DUID_LDU2:
+				duid = P25_DUID_LDU1;
+				break;
+			case P25_DUID_LDU1:
+				duid = P25_DUID_LDU2;
+				break;
+			case P25_DUID_PDU:
+				duid = P25_DUID_PDU;
+				break;
+			case P25_DUID_TSDU:
+				duid = P25_DUID_TSDU;
+				break;
+			default:
+				break;
 		}
 	}
 
@@ -216,7 +221,21 @@ bool CP25Control::writeModem(unsigned char* data, unsigned int len)
 		m_rssiCount++;
 	}
 
-	if (duid == P25_DUID_LDU1) {
+	if (duid == P25_DUID_HEADER) {
+		if (m_rfState == RS_RF_LISTENING) {
+			m_rfData.reset();
+			bool ret = m_rfData.decodeHeader(data + 2U);
+			if (!ret) {
+				m_lastDUID = duid;
+				return false;
+			}
+
+			LogMessage("P25, received RF header");
+
+			m_lastDUID = duid;
+			return true;
+		}
+	} else if (duid == P25_DUID_LDU1) {
 		if (m_rfState == RS_RF_LISTENING) {
 			m_rfData.reset();
 			bool ret = m_rfData.decodeLDU1(data + 2U);
@@ -270,6 +289,16 @@ bool CP25Control::writeModem(unsigned char* data, unsigned int len)
 		}
 
 		if (m_rfState == RS_RF_AUDIO) {
+/*
+			bool ret = m_rfData.decodeLDU1(data + 2U);
+			if (!ret) {
+				LogWarning("P25, LDU1 undecodable LC, using last LDU1 LC");
+				m_rfData = m_rfLastLDU1;
+				m_rfUndecodableLC++;
+			} else {
+				m_rfLastLDU1 = m_rfData;
+			}
+*/
 			// Regenerate Sync
 			CSync::addP25Sync(data + 2U);
 
@@ -293,7 +322,7 @@ bool CP25Control::writeModem(unsigned char* data, unsigned int len)
 			m_rfFrames++;
 			m_lastDUID = duid;
 
-			// Add busy bits
+			// Add busy bits, inbound busy
 			addBusyBits(data + 2U, P25_LDU_FRAME_LENGTH_BITS, false, true);
 
 #if defined(DUMP_P25)
@@ -314,6 +343,16 @@ bool CP25Control::writeModem(unsigned char* data, unsigned int len)
 		}
 	} else if (duid == P25_DUID_LDU2) {
 		if (m_rfState == RS_RF_AUDIO) {
+/*
+			bool ret = m_rfData.decodeLDU2(data + 2U);
+			if (!ret) {
+				LogWarning("P25, LDU2 undecodable LC, using last LDU2 LC");
+				m_rfData = m_rfLastLDU2;
+				m_rfUndecodableLC++;
+			} else {
+				m_rfLastLDU2 = m_rfData;
+			}
+*/
 			writeNetwork(m_rfLDU, m_lastDUID, false);
 
 			// Regenerate Sync
@@ -322,7 +361,7 @@ bool CP25Control::writeModem(unsigned char* data, unsigned int len)
 			// Regenerate NID
 			m_nid.encode(data + 2U, P25_DUID_LDU2);
 
-			// Add the dummy LDU2 data
+			// Add the LDU2 data
 			m_rfData.encodeLDU2(data + 2U);
 
 			// Regenerate the Low Speed Data
@@ -339,7 +378,7 @@ bool CP25Control::writeModem(unsigned char* data, unsigned int len)
 			m_rfFrames++;
 			m_lastDUID = duid;
 
-			// Add busy bits
+			// Add busy bits, inbound busy
 			addBusyBits(data + 2U, P25_LDU_FRAME_LENGTH_BITS, false, true);
 
 #if defined(DUMP_P25)
@@ -392,8 +431,8 @@ bool CP25Control::writeModem(unsigned char* data, unsigned int len)
 			// Regenerate TDULC Data
 			m_rfData.encodeTSDU(data + 2U);
 
-			// Add busy bits
-			addBusyBits(data + 2U, P25_TSDU_FRAME_LENGTH_BITS, true, false);
+			// Add busy bits, inbound busy
+			addBusyBits(data + 2U, P25_TSDU_FRAME_LENGTH_BITS, false, true);
 
 			// Set first busy bits to 1,1
 			setBusyBits(data + 2U, P25_SS0_START, true, true);
@@ -418,8 +457,8 @@ bool CP25Control::writeModem(unsigned char* data, unsigned int len)
 			// Regenerate TDULC Data
 			m_rfData.encodeTSDU(data + 2U);
 
-			// Add busy bits
-			addBusyBits(data + 2U, P25_TSDU_FRAME_LENGTH_BITS, true, false);
+			// Add busy bits, inbound busy
+			addBusyBits(data + 2U, P25_TSDU_FRAME_LENGTH_BITS, false, true);
 
 			// Set first busy bits to 1,1
 			setBusyBits(data + 2U, P25_SS0_START, true, true);
@@ -450,7 +489,7 @@ bool CP25Control::writeModem(unsigned char* data, unsigned int len)
 			// Regenerate NID
 			m_nid.encode(data + 2U, P25_DUID_TERM);
 
-			// Add busy bits
+			// Add busy bits, inbound busy
 			addBusyBits(data + 2U, P25_TERM_FRAME_LENGTH_BITS, false, true);
 
 			bool           grp = m_rfData.getLCF() == P25_LCF_GROUP;
@@ -466,6 +505,8 @@ bool CP25Control::writeModem(unsigned char* data, unsigned int len)
 				LogMessage("P25, received RF end of voice transmission from %s to %s%u, %.1f seconds, BER: %.1f%%, RSSI: -%u/-%u/-%u dBm", source.c_str(), grp ? "TG " : "", dstId, float(m_rfFrames) / 5.56F, float(m_rfErrs * 100U) / float(m_rfBits), m_minRSSI, m_maxRSSI, m_aveRSSI / m_rssiCount);
 			else
 				LogMessage("P25, received RF end of voice transmission from %s to %s%u, %.1f seconds, BER: %.1f%%", source.c_str(), grp ? "TG " : "", dstId, float(m_rfFrames) / 5.56F, float(m_rfErrs * 100U) / float(m_rfBits));
+
+			// LogMessage("P25, total frames: %d, bits: %d, undecodable LC: %d, errors: %d, BER: %.4f%%", m_rfFrames, m_rfBits, m_rfUndecodableLC, m_rfErrs, float(m_rfErrs * 100U) / float(m_rfBits));
 
 			m_display->clearP25();
 
@@ -565,7 +606,7 @@ bool CP25Control::writeModem(unsigned char* data, unsigned int len)
 				// Regenerate NID
 				m_nid.encode(pdu + 2U, P25_DUID_PDU);
 
-				// Add busy bits
+				// Add busy bits, inbound busy
 				addBusyBits(pdu + 2U, newBitLength, false, true);
 
 				if (m_duplex) {
@@ -785,23 +826,23 @@ void CP25Control::writeNetwork(const unsigned char *data, unsigned char type, bo
 
 	switch (type)
 	{
-	case P25_DUID_LDU1:
-		m_network->writeLDU1(data, m_rfData, m_rfLSD, end);
-		break;
-	case P25_DUID_LDU2:
-		m_network->writeLDU2(data, m_rfData, m_rfLSD, end);
-		break;
-	default:
-		break;
+		case P25_DUID_LDU1:
+			m_network->writeLDU1(data, m_rfData, m_rfLSD, end);
+			break;
+		case P25_DUID_LDU2:
+			m_network->writeLDU2(data, m_rfData, m_rfLSD, end);
+			break;
+		default:
+			break;
 	}
 }
 
 void CP25Control::setBusyBits(unsigned char* data, unsigned int ssOffset, bool b1, bool b2)
 {
-    assert(data != NULL);
+	assert(data != NULL);
 
-    WRITE_BIT(data, ssOffset, b1);
-    WRITE_BIT(data, ssOffset + 1U, b2);
+	WRITE_BIT(data, ssOffset, b1);
+	WRITE_BIT(data, ssOffset + 1U, b2);
 }
 
 void CP25Control::addBusyBits(unsigned char* data, unsigned int length, bool b1, bool b2)
@@ -822,8 +863,8 @@ void CP25Control::checkNetLDU1()
 
 	// Check for an unflushed LDU1
 	if (m_netLDU1[0U]   != 0x00U || m_netLDU1[25U]  != 0x00U || m_netLDU1[50U]  != 0x00U ||
-		m_netLDU1[75U]  != 0x00U || m_netLDU1[100U] != 0x00U || m_netLDU1[125U] != 0x00U ||
-		m_netLDU1[150U] != 0x00U || m_netLDU1[175U] != 0x00U || m_netLDU1[200U] != 0x00U)
+	    m_netLDU1[75U]  != 0x00U || m_netLDU1[100U] != 0x00U || m_netLDU1[125U] != 0x00U ||
+	    m_netLDU1[150U] != 0x00U || m_netLDU1[175U] != 0x00U || m_netLDU1[200U] != 0x00U)
 		createNetLDU1();
 }
 
@@ -834,8 +875,8 @@ void CP25Control::checkNetLDU2()
 
 	// Check for an unflushed LDU1
 	if (m_netLDU2[0U]   != 0x00U || m_netLDU2[25U]  != 0x00U || m_netLDU2[50U]  != 0x00U ||
-		m_netLDU2[75U]  != 0x00U || m_netLDU2[100U] != 0x00U || m_netLDU2[125U] != 0x00U ||
-		m_netLDU2[150U] != 0x00U || m_netLDU2[175U] != 0x00U || m_netLDU2[200U] != 0x00U)
+	    m_netLDU2[75U]  != 0x00U || m_netLDU2[100U] != 0x00U || m_netLDU2[125U] != 0x00U ||
+	    m_netLDU2[150U] != 0x00U || m_netLDU2[175U] != 0x00U || m_netLDU2[200U] != 0x00U)
 		createNetLDU2();
 }
 
@@ -919,14 +960,17 @@ void CP25Control::createRFHeader()
 	// Add the NID
 	m_nid.encode(buffer + 2U, P25_DUID_HEADER);
 
-	// Add the dummy header
+	// Add the header
 	m_rfData.encodeHeader(buffer + 2U);
 
-	// Add busy bits
+	// Add busy bits, inbound busy
 	addBusyBits(buffer + 2U, P25_HDR_FRAME_LENGTH_BITS, false, true);
 
 	m_rfFrames = 0U;
 	m_rfErrs = 0U;
+	// m_rfUndecodableLC = 0U;
+	// m_rfLastLDU1.reset();
+	// m_rfLastLDU2.reset();
 	m_rfBits = 1U;
 	m_rfTimeout.start();
 	m_lastDUID = P25_DUID_HEADER;
@@ -951,18 +995,18 @@ void CP25Control::createNetHeader()
 	unsigned int dstId = (m_netLDU1[76U] << 16) + (m_netLDU1[77U] << 8) + m_netLDU1[78U];
 	unsigned int srcId = (m_netLDU1[101U] << 16) + (m_netLDU1[102U] << 8) + m_netLDU1[103U];
 
-	unsigned char algId = m_netLDU2[126U];
-	unsigned int    kId = (m_netLDU2[127U] << 8) + m_netLDU2[128U];
+//	unsigned char algId = m_netLDU2[126U];
+//	unsigned int    kId = (m_netLDU2[127U] << 8) + m_netLDU2[128U];
 
-	unsigned char mi[P25_MI_LENGTH_BYTES];
-	::memcpy(mi + 0U, m_netLDU2 + 51U, 3U);
-	::memcpy(mi + 3U, m_netLDU2 + 76U, 3U);
-	::memcpy(mi + 6U, m_netLDU2 + 101U, 3U);
+//	unsigned char mi[P25_MI_LENGTH_BYTES];
+//	::memcpy(mi + 0U, m_netLDU2 + 51U, 3U);
+//	::memcpy(mi + 3U, m_netLDU2 + 76U, 3U);
+//	::memcpy(mi + 6U, m_netLDU2 + 101U, 3U);
 
 	m_netData.reset();
-	m_netData.setMI(mi);
-	m_netData.setAlgId(algId);
-	m_netData.setKId(kId);
+//	m_netData.setMI(mi);
+//	m_netData.setAlgId(algId);
+//	m_netData.setKId(kId);
 	m_netData.setLCF(lcf);
 	m_netData.setMFId(mfId);
 	m_netData.setSrcId(srcId);
@@ -991,13 +1035,18 @@ void CP25Control::createNetHeader()
 	// Add the NID
 	m_nid.encode(buffer + 2U, P25_DUID_HEADER);
 
-	// Add the dummy header
+	// Add the header
 	m_netData.encodeHeader(buffer + 2U);
 
 	// Add busy bits
 	if (m_remoteGateway)
-		addBusyBits(buffer + 2U, P25_HDR_FRAME_LENGTH_BITS, false, false);
+		// Add busy bits, inbound/outbound
+		addBusyBits(buffer + 2U, P25_HDR_FRAME_LENGTH_BITS, true, false);
+	else if (m_duplex)
+		// Add busy bits, inbound idle
+		addBusyBits(buffer + 2U, P25_HDR_FRAME_LENGTH_BITS, true, true);
 	else
+		// Add busy bits, inbound busy
 		addBusyBits(buffer + 2U, P25_HDR_FRAME_LENGTH_BITS, false, true);
 
 	writeQueueNet(buffer, P25_HDR_FRAME_LENGTH_BYTES + 2U);
@@ -1040,8 +1089,13 @@ void CP25Control::createNetLDU1()
 
 	// Add busy bits
 	if (m_remoteGateway)
-		addBusyBits(buffer + 2U, P25_LDU_FRAME_LENGTH_BITS, false, false);
+		// Add busy bits, inbound/outbound
+		addBusyBits(buffer + 2U, P25_LDU_FRAME_LENGTH_BITS, true, false);
+	else if (m_duplex)
+		// Add busy bits, inbound idle
+		addBusyBits(buffer + 2U, P25_LDU_FRAME_LENGTH_BITS, true, true);
 	else
+		// Add busy bits, inbound busy
 		addBusyBits(buffer + 2U, P25_LDU_FRAME_LENGTH_BITS, false, true);
 
 	writeQueueNet(buffer, P25_LDU_FRAME_LENGTH_BYTES + 2U);
@@ -1067,7 +1121,7 @@ void CP25Control::createNetLDU2()
 	// Add the NID
 	m_nid.encode(buffer + 2U, P25_DUID_LDU2);
 
-	// Add the dummy LDU2 data
+	// Add the LDU2 data
 	m_netData.encodeLDU2(buffer + 2U);
 
 	// Add the Audio
@@ -1088,8 +1142,13 @@ void CP25Control::createNetLDU2()
 
 	// Add busy bits
 	if (m_remoteGateway)
-		addBusyBits(buffer + 2U, P25_LDU_FRAME_LENGTH_BITS, false, false);
+		// Add busy bits, inbound/outbound
+		addBusyBits(buffer + 2U, P25_LDU_FRAME_LENGTH_BITS, true, false);
+	else if (m_duplex)
+		// Add busy bits, inbound idle
+		addBusyBits(buffer + 2U, P25_LDU_FRAME_LENGTH_BITS, true, true);
 	else
+		// Add busy bits, inbound busy
 		addBusyBits(buffer + 2U, P25_LDU_FRAME_LENGTH_BITS, false, true);
 
 	writeQueueNet(buffer, P25_LDU_FRAME_LENGTH_BYTES + 2U);
@@ -1115,8 +1174,13 @@ void CP25Control::createNetTerminator()
 
 	// Add busy bits
 	if (m_remoteGateway)
-		addBusyBits(buffer + 2U, P25_TERM_FRAME_LENGTH_BITS, false, false);
+		// Add busy bits, inbound/outbound
+		addBusyBits(buffer + 2U, P25_TERM_FRAME_LENGTH_BITS, true, false);
+	else if (m_duplex)
+		// Add busy bits, inbound idle
+		addBusyBits(buffer + 2U, P25_TERM_FRAME_LENGTH_BITS, true, true);
 	else
+		// Add busy bits, inbound busy
 		addBusyBits(buffer + 2U, P25_TERM_FRAME_LENGTH_BITS, false, true);
 
 	writeQueueNet(buffer, P25_TERM_FRAME_LENGTH_BYTES + 2U);

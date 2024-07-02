@@ -17,13 +17,14 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#if !defined(SMETER_H)
-#define	SMETER_H
+#if !defined(SMETER_H_)
+#define	SMETER_H_
 
-class CSMeter
-{
+
+class CSMeter {
 public:
-    static void getSignal(unsigned int rssi, unsigned int& signal, unsigned int& plus);
+	static void getSignal(unsigned int rssi, unsigned int &signal, unsigned int &plus);
 };
 
-#endif
+
+#endif	/* !SMETER_H_ */

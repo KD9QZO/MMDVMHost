@@ -23,7 +23,7 @@
 #include <cstring>
 #include <cassert>
 
-#if defined(_WIN32) || defined(_WIN64)
+#if (defined(_WIN32) || defined(_WIN64))
 #include <setupapi.h>
 #include <winioctl.h>
 #else
@@ -37,38 +37,34 @@
 #endif
 
 
-#if defined(_WIN32) || defined(_WIN64)
+#if (defined(_WIN32) || defined(_WIN64))
 
-CUARTController::CUARTController(const std::string& device, unsigned int speed, bool assertRTS) :
-m_device(device),
-m_speed(speed),
-m_assertRTS(assertRTS),
-m_handle(INVALID_HANDLE_VALUE)
-{
+CUARTController::CUARTController(const std::string &device, unsigned int speed, bool assertRTS):
+		m_device(device),
+		m_speed(speed),
+		m_assertRTS(assertRTS),
+		m_handle(INVALID_HANDLE_VALUE) {
 	assert(!device.empty());
 }
 
 CUARTController::CUARTController(unsigned int speed, bool assertRTS) :
-m_device(),
-m_speed(speed),
-m_assertRTS(assertRTS),
-m_handle(INVALID_HANDLE_VALUE)
-{
+		m_device(),
+		m_speed(speed),
+		m_assertRTS(assertRTS),
+		m_handle(INVALID_HANDLE_VALUE) {
 }
 
-CUARTController::~CUARTController()
-{
+CUARTController::~CUARTController() {
 }
 
-bool CUARTController::open()
-{
+bool CUARTController::open() {
 	assert(m_handle == INVALID_HANDLE_VALUE);
 
 	DWORD errCode;
 
 	std::string baseName = m_device.substr(4U);		// Convert "\\.\COM10" to "COM10"
 
-	m_handle = ::CreateFileA(m_device.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	m_handle = ::CreateFileA(m_device.c_str(), (GENERIC_READ | GENERIC_WRITE), 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (m_handle == INVALID_HANDLE_VALUE) {
 		LogError("Cannot open device - %s, err=%04lx", m_device.c_str(), ::GetLastError());
 		return false;
@@ -82,18 +78,18 @@ bool CUARTController::open()
 		return false;
 	}
 
-	dcb.BaudRate        = DWORD(m_speed);
-	dcb.ByteSize        = 8;
-	dcb.Parity          = NOPARITY;
-	dcb.fParity         = FALSE;
-	dcb.StopBits        = ONESTOPBIT;
-	dcb.fInX            = FALSE;
-	dcb.fOutX           = FALSE;
-	dcb.fOutxCtsFlow    = FALSE;
-	dcb.fOutxDsrFlow    = FALSE;
+	dcb.BaudRate = DWORD(m_speed);
+	dcb.ByteSize = 8;
+	dcb.Parity = NOPARITY;
+	dcb.fParity = FALSE;
+	dcb.StopBits = ONESTOPBIT;
+	dcb.fInX = FALSE;
+	dcb.fOutX = FALSE;
+	dcb.fOutxCtsFlow = FALSE;
+	dcb.fOutxDsrFlow = FALSE;
 	dcb.fDsrSensitivity = FALSE;
-	dcb.fDtrControl     = DTR_CONTROL_DISABLE;
-	dcb.fRtsControl     = RTS_CONTROL_DISABLE;
+	dcb.fDtrControl = DTR_CONTROL_DISABLE;
+	dcb.fRtsControl = RTS_CONTROL_DISABLE;
 
 	if (::SetCommState(m_handle, &dcb) == 0) {
 		LogError("Cannot set the attributes for %s, err=%04lx", m_device.c_str(), ::GetLastError());
@@ -110,9 +106,9 @@ bool CUARTController::open()
 		return false;
 	}
 
-	timeouts.ReadIntervalTimeout        = MAXDWORD;
+	timeouts.ReadIntervalTimeout = MAXDWORD;
 	timeouts.ReadTotalTimeoutMultiplier = 0UL;
-	timeouts.ReadTotalTimeoutConstant   = 0UL;
+	timeouts.ReadTotalTimeoutConstant = 0UL;
 
 	if (!::SetCommTimeouts(m_handle, &timeouts)) {
 		LogError("Cannot set the timeouts for %s, err=%04lx", m_device.c_str(), ::GetLastError());
@@ -140,8 +136,7 @@ bool CUARTController::open()
 	return true;
 }
 
-int CUARTController::read(unsigned char* buffer, unsigned int length)
-{
+int CUARTController::read(unsigned char *buffer, unsigned int length) {
 	assert(m_handle != INVALID_HANDLE_VALUE);
 	assert(buffer != NULL);
 
@@ -152,8 +147,9 @@ int CUARTController::read(unsigned char* buffer, unsigned int length)
 		if (ret < 0) {
 			return ret;
 		} else if (ret == 0) {
-			if (ptr == 0U)
+			if (ptr == 0U) {
 				return 0;
+			}
 		} else {
 			ptr += ret;
 		}
@@ -162,13 +158,13 @@ int CUARTController::read(unsigned char* buffer, unsigned int length)
 	return int(length);
 }
 
-int CUARTController::readNonblock(unsigned char* buffer, unsigned int length)
-{
+int CUARTController::readNonblock(unsigned char *buffer, unsigned int length) {
 	assert(m_handle != INVALID_HANDLE_VALUE);
 	assert(buffer != NULL);
 
-	if (length == 0U)
+	if (length == 0U) {
 		return 0;
+	}
 
 	DWORD errors;
 	COMSTAT status;
@@ -177,12 +173,14 @@ int CUARTController::readNonblock(unsigned char* buffer, unsigned int length)
 		return -1;
 	}
 
-	if (status.cbInQue == 0UL)
+	if (status.cbInQue == 0UL) {
 		return 0;
+	}
 
 	DWORD readLength = status.cbInQue;
-	if (length < readLength)
+	if (length < readLength) {
 		readLength = length;
+	}
 
 	DWORD bytes = 0UL;
 	BOOL ret = ::ReadFile(m_handle, buffer, readLength, &bytes, NULL);
@@ -194,13 +192,13 @@ int CUARTController::readNonblock(unsigned char* buffer, unsigned int length)
 	return int(bytes);
 }
 
-int CUARTController::write(const unsigned char* buffer, unsigned int length)
-{
+int CUARTController::write(const unsigned char *buffer, unsigned int length) {
 	assert(m_handle != INVALID_HANDLE_VALUE);
 	assert(buffer != NULL);
 
-	if (length == 0U)
+	if (length == 0U) {
 		return 0;
+	}
 
 	unsigned int ptr = 0U;
 
@@ -218,60 +216,57 @@ int CUARTController::write(const unsigned char* buffer, unsigned int length)
 	return int(length);
 }
 
-void CUARTController::close()
-{
+void CUARTController::close() {
 	assert(m_handle != INVALID_HANDLE_VALUE);
 
 	::CloseHandle(m_handle);
 	m_handle = INVALID_HANDLE_VALUE;
 }
 
-#else
+#else	/* (defined(_WIN32) || defined(_WIN64)) */
 
-CUARTController::CUARTController(const std::string& device, unsigned int speed, bool assertRTS) :
-m_device(device),
-m_speed(speed),
-m_assertRTS(assertRTS),
-m_fd(-1)
-{
+CUARTController::CUARTController(const std::string &device, unsigned int speed, bool assertRTS):
+		m_device(device),
+		m_speed(speed),
+		m_assertRTS(assertRTS),
+		m_fd(-1) {
 	assert(!device.empty());
 }
 
-CUARTController::CUARTController(unsigned int speed, bool assertRTS) :
-m_device(),
-m_speed(speed),
-m_assertRTS(assertRTS),
-m_fd(-1)
-{
+CUARTController::CUARTController(unsigned int speed, bool assertRTS):
+		m_device(),
+		m_speed(speed),
+		m_assertRTS(assertRTS),
+		m_fd(-1) {
 }
 
-CUARTController::~CUARTController()
-{
+CUARTController::~CUARTController() {
 }
 
-bool CUARTController::open()
-{
+bool CUARTController::open() {
 	assert(m_fd == -1);
 
 #if defined(__APPLE__)
-	m_fd = ::open(m_device.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK); /*open in block mode under OSX*/
+	m_fd = ::open(m_device.c_str(), (O_RDWR | O_NOCTTY | O_NONBLOCK));	/* open in block mode under OS X */
 #else
-	m_fd = ::open(m_device.c_str(), O_RDWR | O_NOCTTY | O_NDELAY, 0);
+	m_fd = ::open(m_device.c_str(), (O_RDWR | O_NOCTTY | O_NDELAY), 0);
 #endif
+
 	if (m_fd < 0) {
 		LogError("Cannot open device - %s", m_device.c_str());
 		return false;
 	}
 
-	if (::isatty(m_fd))
+	if (::isatty(m_fd)) {
 		return setRaw();
-		
+	}
+
 	return true;
 }
 
-bool CUARTController::setRaw()
-{
+bool CUARTController::setRaw() {
 	termios termios;
+
 	if (::tcgetattr(m_fd, &termios) < 0) {
 		LogError("Cannot get the attributes for %s", m_device.c_str());
 		::close(m_fd);
@@ -283,86 +278,97 @@ bool CUARTController::setRaw()
 	termios.c_iflag &= ~(IXON | IXOFF | IXANY);
 	termios.c_oflag &= ~(OPOST);
 	termios.c_cflag &= ~(CSIZE | CSTOPB | PARENB | CRTSCTS);
-	termios.c_cflag |=  (CS8 | CLOCAL | CREAD);
+	termios.c_cflag |= (CS8 | CLOCAL | CREAD);
 	termios.c_lflag &= ~(ISIG | ICANON | IEXTEN);
 	termios.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
 #if defined(__APPLE__)
 	termios.c_cc[VMIN] = 1;
 	termios.c_cc[VTIME] = 1;
-	#define B460800 460800
+#define B460800 460800
 #else
 	termios.c_cc[VMIN]  = 0;
 	termios.c_cc[VTIME] = 10;
 #endif
 
-#if !defined(B38400) || (B38400 != 38400)
+#if (!defined(B38400) || (B38400 != 38400))
 	switch (m_speed) {
 #if defined(B1200)
 		case 1200U:
 			::cfsetospeed(&termios, B1200);
 			::cfsetispeed(&termios, B1200);
 			break;
-#endif /*B1200*/
-#if defined(B2400)			
+#endif	/* B1200 */
+
+#if defined(B2400)
 		case 2400U:
 			::cfsetospeed(&termios, B2400);
 			::cfsetispeed(&termios, B2400);
 			break;
-#endif /*B2400*/
+#endif	/* B2400 */
+
 #if defined(B4800)
 		case 4800U:
 			::cfsetospeed(&termios, B4800);
 			::cfsetispeed(&termios, B4800);
 			break;
-#endif /*B4800*/
+#endif	/* B4800 */
+
 #if defined(B9600)
 		case 9600U:
 			::cfsetospeed(&termios, B9600);
 			::cfsetispeed(&termios, B9600);
 			break;
-#endif /*B9600*/
+#endif	/* B9600 */
+
 #if defined(B19200)
 		case 19200U:
 			::cfsetospeed(&termios, B19200);
 			::cfsetispeed(&termios, B19200);
 			break;
-#endif /*B19200*/
+#endif	/* B19200 */
+
 #if defined(B38400)
 		case 38400U:
 			::cfsetospeed(&termios, B38400);
 			::cfsetispeed(&termios, B38400);
 			break;
-#endif /*B38400*/
+#endif	/* B38400 */
+
 #if defined(B57600)
 		case 57600U:
 			::cfsetospeed(&termios, B57600);
 			::cfsetispeed(&termios, B57600);
 			break;
-#endif /*B57600*/
+#endif	/* B57600 */
+
 #if defined(B115200)
 		case 115200U:
 			::cfsetospeed(&termios, B115200);
 			::cfsetispeed(&termios, B115200);
 			break;
-#endif /*B115200*/
+#endif	/* B115200 */
+
 #if defined(B230400)
 		case 230400U:
 			::cfsetospeed(&termios, B230400);
 			::cfsetispeed(&termios, B230400);
 			break;
-#endif /*B230400*/
-#if defined(B460800)		
+#endif	/* B230400 */
+
+#if defined(B460800)
 		case 460800U:
  			::cfsetospeed(&termios, B460800);
  			::cfsetispeed(&termios, B460800);
 			break;
-#endif /*B460800*/
+#endif	/* B460800 */
+
 #if defined(B500000)
-                case 500000U:
-                        ::cfsetospeed(&termios, B500000);
-                        ::cfsetispeed(&termios, B500000);
-                        break;
-#endif /*B500000*/
+		case 500000U:
+			::cfsetospeed(&termios, B500000);
+			::cfsetispeed(&termios, B500000);
+			break;
+#endif	/* B500000 */
+
 		default:
 			LogError("Unsupported serial port speed - %u", m_speed);
 			::close(m_fd);
@@ -381,6 +387,7 @@ bool CUARTController::setRaw()
 
 	if (m_assertRTS) {
 		unsigned int y;
+
 		if (::ioctl(m_fd, TIOCMGET, &y) < 0) {
 			LogError("Cannot get the control attributes for %s", m_device.c_str());
 			::close(m_fd);
@@ -404,21 +411,20 @@ bool CUARTController::setRaw()
 }
 
 #if defined(__APPLE__)
-int CUARTController::setNonblock(bool nonblock)
-{
+int CUARTController::setNonblock(bool nonblock) {
 	int flag = ::fcntl(m_fd, F_GETFL, 0);
 
-	if (nonblock)
+	if (nonblock) {
 		flag |= O_NONBLOCK;
-	else
-		flag &= ~O_NONBLOCK;
+	} else {
+		flag &= ~(O_NONBLOCK);
+	}
 
 	return ::fcntl(m_fd, F_SETFL, flag);
 }
 #endif
 
-int CUARTController::read(unsigned char* buffer, unsigned int length)
-{
+int CUARTController::read(unsigned char *buffer, unsigned int length) {
 	assert(buffer != NULL);
 	assert(m_fd != -1);
 
@@ -465,19 +471,20 @@ int CUARTController::read(unsigned char* buffer, unsigned int length)
 	return length;
 }
 
-bool CUARTController::canWrite(){
+bool CUARTController::canWrite() {
 #if defined(__APPLE__)
 	fd_set wset;
 	FD_ZERO(&wset);
 	FD_SET(m_fd, &wset);
 
 	struct timeval timeo;
-	timeo.tv_sec  = 0;
+	timeo.tv_sec = 0;
 	timeo.tv_usec = 0;
 
 	int rc = ::select(m_fd + 1, NULL, &wset, NULL, &timeo);
-	if (rc > 0 && FD_ISSET(m_fd, &wset))
+	if (rc > 0 && FD_ISSET(m_fd, &wset)) {
 		return true;
+	}
 
 	return false;
 #else
@@ -485,8 +492,7 @@ bool CUARTController::canWrite(){
 #endif
 }
 
-int CUARTController::write(const unsigned char* buffer, unsigned int length)
-{
+int CUARTController::write(const unsigned char *buffer, unsigned int length) {
 	assert(buffer != NULL);
 	assert(m_fd != -1);
 
@@ -512,13 +518,12 @@ int CUARTController::write(const unsigned char* buffer, unsigned int length)
 	return length;
 }
 
-void CUARTController::close()
-{
+void CUARTController::close() {
 	assert(m_fd != -1);
 
 	::close(m_fd);
 	m_fd = -1;
 }
 
-#endif
+#endif	/* !(defined(_WIN32) || defined(_WIN64)) */
 

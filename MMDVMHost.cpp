@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015-2021 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015-2021,2023 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -75,7 +75,7 @@ static void sigHandler2(int signum)
 const char* HEADER1 = "This software is for use on amateur radio networks only,";
 const char* HEADER2 = "it is to be used for educational purposes only. Its use on";
 const char* HEADER3 = "commercial networks is strictly prohibited.";
-const char* HEADER4 = "Copyright(C) 2015-2021 by Jonathan Naylor, G4KLX and others";
+const char* HEADER4 = "Copyright(C) 2015-2024 by Jonathan Naylor, G4KLX and others";
 
 int main(int argc, char** argv)
 {
@@ -112,15 +112,24 @@ int main(int argc, char** argv)
 
 		delete host;
 
-		if (m_signal == 2)
-			::LogInfo("MMDVMHost-%s exited on receipt of SIGINT", VERSION);
-
-		if (m_signal == 15)
-			::LogInfo("MMDVMHost-%s exited on receipt of SIGTERM", VERSION);
-
-		if (m_signal == 1)
-			::LogInfo("MMDVMHost-%s is restarting on receipt of SIGHUP", VERSION);
-	} while (m_signal == 1);
+		switch (m_signal) {
+			case 2:
+				::LogInfo("MMDVMHost-%s exited on receipt of SIGINT", VERSION);
+				break;
+			case 15:
+				::LogInfo("MMDVMHost-%s exited on receipt of SIGTERM", VERSION);
+				break;
+			case 1:
+				::LogInfo("MMDVMHost-%s exited on receipt of SIGHUP", VERSION);
+				break;
+			case 10:
+				::LogInfo("MMDVMHost-%s is restarting on receipt of SIGUSR1", VERSION);
+				break;
+			default:
+				::LogInfo("MMDVMHost-%s exited on receipt of an unknown signal", VERSION);
+				break;
+		}
+	} while (m_signal == 10);
 
 	::LogFinalise();
 
@@ -288,8 +297,8 @@ int CMMDVMHost::run()
 	LogInfo(HEADER3);
 	LogInfo(HEADER4);
 
-	LogMessage("MMDVMHost-%s is starting", VERSION);
-	LogMessage("Built %s %s (GitID #%.7s)", __TIME__, __DATE__, gitversion);
+	LogInfo("MMDVMHost-%s is starting", VERSION);
+	LogInfo("Built %s %s (GitID #%.7s)", __TIME__, __DATE__, gitversion);
 
 	readParams();
 
@@ -343,6 +352,8 @@ int CMMDVMHost::run()
 	}
 
 	m_display = CDisplay::createDisplay(m_conf, m_modem);
+
+	LogInfo("Opening network connections");
 
 	if (m_dstarEnabled && m_conf.getDStarNetworkEnabled()) {
 		ret = createDStarNetwork();
@@ -478,6 +489,8 @@ int CMMDVMHost::run()
 		m_dmrLookup = new CDMRLookup(lookupFile, reloadTime);
 		m_dmrLookup->read();
 	}
+
+	LogInfo("Starting protocol handlers");
 
 	CStopWatch stopWatch;
 	stopWatch.start();
@@ -756,7 +769,7 @@ int CMMDVMHost::run()
 
 	setMode(MODE_IDLE);
 
-	LogMessage("MMDVMHost-%s is running", VERSION);
+	LogInfo("MMDVMHost-%s is running", VERSION);
 
 	while (!m_killed) {
 		bool lockout = m_modem->hasLockout();
@@ -1298,17 +1311,13 @@ int CMMDVMHost::run()
 
 	setMode(MODE_QUIT);
 
-	m_modem->close();
-	delete m_modem;
-
-	m_display->close();
-	delete m_display;
-
 	if (m_dmrLookup != NULL)
 		m_dmrLookup->stop();
 
 	if (m_nxdnLookup != NULL)
 		m_nxdnLookup->stop();
+
+	LogInfo("Closing network connections");
 
 	if (m_dstarNetwork != NULL) {
 		m_dstarNetwork->close();
@@ -1365,6 +1374,8 @@ int CMMDVMHost::run()
 		delete m_remoteControl;
 	}
 
+	LogInfo("Stopping protocol handlers");
+
 	delete m_dstar;
 	delete m_dmr;
 	delete m_ysf;
@@ -1374,6 +1385,14 @@ int CMMDVMHost::run()
 	delete m_pocsag;
 	delete m_fm;
 	delete m_ax25;
+
+	LogInfo("MMDVMHost-%s has stopped", VERSION);
+
+	m_modem->close();
+	delete m_modem;
+
+	m_display->close();
+	delete m_display;
 
 	return 0;
 }
@@ -1867,6 +1886,8 @@ bool CMMDVMHost::createFMNetwork()
 {
 	std::string callsign       = m_conf.getFMCallsign();
 	std::string protocol       = m_conf.getFMNetworkProtocol();
+	unsigned int sampleRate    = m_conf.getFMNetworkSampleRate();
+	std::string squelchFile    = m_conf.getFMNetworkSquelchFile();
 	std::string gatewayAddress = m_conf.getFMGatewayAddress();
 	unsigned short gatewayPort = m_conf.getFMGatewayPort();
 	std::string localAddress   = m_conf.getFMLocalAddress();
@@ -1880,6 +1901,10 @@ bool CMMDVMHost::createFMNetwork()
 
 	LogInfo("FM Network Parameters");
 	LogInfo("    Protocol: %s", protocol.c_str());
+	if (protocol == "RAW") {
+		LogInfo("    Sample Rate: %u", sampleRate);
+		LogInfo("    Squelch File: %s", squelchFile.empty() ? "(none)" : squelchFile.c_str());
+	}
 	LogInfo("    Gateway Address: %s", gatewayAddress.c_str());
 	LogInfo("    Gateway Port: %hu", gatewayPort);
 	LogInfo("    Local Address: %s", localAddress.c_str());
@@ -1890,7 +1915,7 @@ bool CMMDVMHost::createFMNetwork()
 	LogInfo("    RX Audio Gain: %.2f", rxAudioGain);
 	LogInfo("    Mode Hang: %us", m_fmNetModeHang);
 
-	m_fmNetwork = new CFMNetwork(callsign, protocol, localAddress, localPort, gatewayAddress, gatewayPort, debug);
+	m_fmNetwork = new CFMNetwork(callsign, protocol, localAddress, localPort, gatewayAddress, gatewayPort, sampleRate, squelchFile, debug);
 
 	bool ret = m_fmNetwork->open();
 	if (!ret) {
@@ -2008,6 +2033,7 @@ void CMMDVMHost::setMode(unsigned char mode)
 		m_modeTimer.start();
 		m_cwIdTimer.stop();
 		createLockFile("D-Star");
+		LogMessage("Mode set to D-Star");
 		break;
 
 	case MODE_DMR:
@@ -2056,6 +2082,7 @@ void CMMDVMHost::setMode(unsigned char mode)
 		m_modeTimer.start();
 		m_cwIdTimer.stop();
 		createLockFile("DMR");
+		LogMessage("Mode set to DMR");
 		break;
 
 	case MODE_YSF:
@@ -2100,6 +2127,7 @@ void CMMDVMHost::setMode(unsigned char mode)
 		m_modeTimer.start();
 		m_cwIdTimer.stop();
 		createLockFile("System Fusion");
+		LogMessage("Mode set to System Fusion");
 		break;
 
 	case MODE_P25:
@@ -2144,6 +2172,7 @@ void CMMDVMHost::setMode(unsigned char mode)
 		m_modeTimer.start();
 		m_cwIdTimer.stop();
 		createLockFile("P25");
+		LogMessage("Mode set to P25");
 		break;
 
 	case MODE_NXDN:
@@ -2188,6 +2217,7 @@ void CMMDVMHost::setMode(unsigned char mode)
 		m_modeTimer.start();
 		m_cwIdTimer.stop();
 		createLockFile("NXDN");
+		LogMessage("Mode set to NXDN");
 		break;
 
 	case MODE_M17:
@@ -2232,6 +2262,7 @@ void CMMDVMHost::setMode(unsigned char mode)
 		m_modeTimer.start();
 		m_cwIdTimer.stop();
 		createLockFile("M17");
+		LogMessage("Mode set to M17");
 		break;
 
 	case MODE_POCSAG:
@@ -2276,6 +2307,7 @@ void CMMDVMHost::setMode(unsigned char mode)
 		m_modeTimer.start();
 		m_cwIdTimer.stop();
 		createLockFile("POCSAG");
+		LogMessage("Mode set to POCSAG");
 		break;
 
 	case MODE_FM:
@@ -2325,6 +2357,7 @@ void CMMDVMHost::setMode(unsigned char mode)
 		m_modeTimer.start();
 		m_cwIdTimer.stop();
 		createLockFile("FM");
+		LogMessage("Mode set to FM");
 		break;
 
 	case MODE_LOCKOUT:
@@ -2374,6 +2407,7 @@ void CMMDVMHost::setMode(unsigned char mode)
 		m_modeTimer.stop();
 		m_cwIdTimer.stop();
 		removeLockFile();
+		LogMessage("Mode set to Lockout");
 		break;
 
 	case MODE_ERROR:
@@ -2423,6 +2457,7 @@ void CMMDVMHost::setMode(unsigned char mode)
 		m_modeTimer.stop();
 		m_cwIdTimer.stop();
 		removeLockFile();
+		LogMessage("Mode set to Error");
 		break;
 
 	default:
@@ -2481,6 +2516,7 @@ void CMMDVMHost::setMode(unsigned char mode)
 		m_mode = MODE_IDLE;
 		m_modeTimer.stop();
 		removeLockFile();
+		LogMessage("Mode set to Idle");
 		break;
 	}
 }
@@ -2576,7 +2612,7 @@ void CMMDVMHost::remoteControl()
 				m_nxdnNetwork->enable(true);
 			break;
 		case RCD_ENABLE_M17:
-			if (m_m17 != NULL && m_m17Enabled == false)
+			if (m_m17 != NULL && !m_m17Enabled)
 				processEnableCommand(m_m17Enabled, true);
 			if (m_m17Network != NULL)
 				m_m17Network->enable(true);
@@ -2620,7 +2656,7 @@ void CMMDVMHost::remoteControl()
 				m_nxdnNetwork->enable(false);
 			break;
 		case RCD_DISABLE_M17:
-			if (m_m17 != NULL && m_m17Enabled == true)
+			if (m_m17 != NULL && m_m17Enabled)
 				processEnableCommand(m_m17Enabled, false);
 			if (m_m17Network != NULL)
 				m_m17Network->enable(false);
