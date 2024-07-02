@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2016,2017,2018,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2016,2017,2018,2020,2023,2024 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -49,6 +49,59 @@ const unsigned int M17_BER_COUNT    = 28U;		  // 28 * 40ms = 1120ms
 // 00:low, others:high-speed. bit[2] is overlapped with LAYOUT_COMPAT_MASK.
 #define LAYOUT_HIGHSPEED	(3 << 2)
 
+CNextion::CNextion(const std::string& callsign, unsigned int dmrid, ISerialPort* serial, unsigned int brightness, bool displayClock, bool utc, unsigned int idleBrightness, unsigned int screenLayout, unsigned int txFrequency, unsigned int rxFrequency, bool displayTempInF, CUDPSocket* socket, struct sockaddr_storage& addr, unsigned int addrLength) :
+CDisplay(),
+m_callsign(callsign),
+m_ipaddress("(ip unknown)"),
+m_dmrid(dmrid),
+m_serial(serial),
+m_brightness(brightness),
+m_mode(MODE_IDLE),
+m_displayClock(displayClock),
+m_utc(utc),
+m_idleBrightness(idleBrightness),
+m_screenLayout(0),
+m_clockDisplayTimer(1000U, 0U, 400U),
+m_rssiAccum1(0U),
+m_rssiAccum2(0U),
+m_berAccum1(0.0F),
+m_berAccum2(0.0F),
+m_rssiCount1(0U),
+m_rssiCount2(0U),
+m_berCount1(0U),
+m_berCount2(0U),
+m_txFrequency(txFrequency),
+m_rxFrequency(rxFrequency),
+m_fl_txFrequency(0.0F),
+m_fl_rxFrequency(0.0F),
+m_displayTempInF(displayTempInF),
+m_socket(socket),
+m_addr(addr),
+m_addrLength(addrLength)
+{
+	assert(serial != NULL);
+	assert(brightness >= 0U && brightness <= 100U);
+	assert(socket != NULL);
+	assert(addrLength > 0U);
+
+	static const unsigned int feature_set[] = {
+		0,				// 0: G4KLX
+		0,				// 1: (reserved, low speed)
+						// 2: ON7LDS
+		LAYOUT_TA_ENABLE | LAYOUT_TA_COLOUR | LAYOUT_TA_FONTSIZE,
+		LAYOUT_TA_ENABLE | LAYOUT_DIY,	// 3: ON7LDS-DIY
+		LAYOUT_TA_ENABLE | LAYOUT_DIY,	// 4: ON7LDS-DIY (high speed)
+		0,				// 5: (reserved, high speed)
+		0,				// 6: (reserved, high speed)
+		0,				// 7: (reserved, high speed)
+	};
+
+	if (screenLayout & ~LAYOUT_COMPAT_MASK)
+		m_screenLayout = screenLayout & ~LAYOUT_COMPAT_MASK;
+	else
+		m_screenLayout = feature_set[screenLayout];
+}
+
 CNextion::CNextion(const std::string& callsign, unsigned int dmrid, ISerialPort* serial, unsigned int brightness, bool displayClock, bool utc, unsigned int idleBrightness, unsigned int screenLayout, unsigned int txFrequency, unsigned int rxFrequency, bool displayTempInF) :
 CDisplay(),
 m_callsign(callsign),
@@ -74,7 +127,10 @@ m_txFrequency(txFrequency),
 m_rxFrequency(rxFrequency),
 m_fl_txFrequency(0.0F),
 m_fl_rxFrequency(0.0F),
-m_displayTempInF(displayTempInF)
+m_displayTempInF(displayTempInF),
+m_socket(NULL),
+m_addr(),
+m_addrLength(0U)
 {
 	assert(serial != NULL);
 	assert(brightness >= 0U && brightness <= 100U);
@@ -137,7 +193,7 @@ void CNextion::setIdleInt()
 	sendCommand("page MMDVM");
 	sendCommandAction(1U);
 
-	if (m_brightness>0) {
+	if (m_brightness > 0U) {
 		::sprintf(command, "dim=%u", m_idleBrightness);
 		sendCommand(command);
 	}
@@ -203,7 +259,7 @@ void CNextion::setErrorInt(const char* text)
 	sendCommandAction(1U);
 
 	char command[20];
-	if (m_brightness>0) {
+	if (m_brightness > 0U) {
 		::sprintf(command, "dim=%u", m_brightness);
 		sendCommand(command);
 	}
@@ -226,7 +282,7 @@ void CNextion::setLockoutInt()
 	sendCommandAction(1U);
 
 	char command[20];
-	if (m_brightness>0) {
+	if (m_brightness > 0U) {
 		::sprintf(command, "dim=%u", m_brightness);
 		sendCommand(command);
 	}
@@ -245,7 +301,7 @@ void CNextion::setQuitInt()
 	sendCommandAction(1U);
 
 	char command[100];
-	if (m_brightness>0) {
+	if (m_brightness > 0U) {
 		::sprintf(command, "dim=%u", m_idleBrightness);
 		sendCommand(command);
 	}
@@ -268,7 +324,7 @@ void CNextion::setFMInt()
 	sendCommandAction(1U);
 
 	char command[20];
-	if (m_brightness > 0) {
+	if (m_brightness > 0U) {
 		::sprintf(command, "dim=%u", m_brightness);
 		sendCommand(command);
 	}
@@ -295,7 +351,7 @@ void CNextion::writeDStarInt(const char* my1, const char* my2, const char* your,
 	}
 
 	char text[50U];
-	if (m_brightness>0) {
+	if (m_brightness > 0U) {
 		::sprintf(text, "dim=%u", m_brightness);
 		sendCommand(text);
 	}
@@ -396,7 +452,7 @@ void CNextion::writeDMRInt(unsigned int slotNo, const std::string& src, bool gro
 	}
 
 	char text[50U];
-	if (m_brightness>0) {
+	if (m_brightness > 0U) {
 		::sprintf(text, "dim=%u", m_brightness);
 		sendCommand(text);
 	}
@@ -477,7 +533,7 @@ void CNextion::writeDMRRSSIInt(unsigned int slotNo, unsigned char rssi)
 	}
 }
 
-void CNextion::writeDMRTAInt(unsigned int slotNo, unsigned char* talkerAlias, const char* type)
+void CNextion::writeDMRTAInt(unsigned int slotNo, const unsigned char* talkerAlias, const char* type)
 {
 	if (!(m_screenLayout & LAYOUT_TA_ENABLE))
 		return;
@@ -485,11 +541,11 @@ void CNextion::writeDMRTAInt(unsigned int slotNo, unsigned char* talkerAlias, co
 	if (type[0] == ' ') {
 		if (slotNo == 1U) {
 			if (m_screenLayout & LAYOUT_TA_COLOUR)
-				 sendCommand("t0.pco=33808");
+				 sendCommand("t8.pco=33808");
 			sendCommandAction(64U);
 		} else {
 			if (m_screenLayout & LAYOUT_TA_COLOUR)
-				 sendCommand("t2.pco=33808");
+				 sendCommand("t9.pco=33808");
 			sendCommandAction(72U);
 		}
 
@@ -498,37 +554,37 @@ void CNextion::writeDMRTAInt(unsigned int slotNo, unsigned char* talkerAlias, co
 
 	if (slotNo == 1U) {
 		char text[50U];
-		::sprintf(text, "t0.txt=\"1 %s %s\"", type, talkerAlias);
+		::sprintf(text, "t8.txt=\"%s %s\"", type, talkerAlias);
 
 		if (m_screenLayout & LAYOUT_TA_FONTSIZE) {
 			if (::strlen((char*)talkerAlias) > (16U-4U))
-				sendCommand("t0.font=3");
+				sendCommand("t8.font=3");
 			if (::strlen((char*)talkerAlias) > (20U-4U))
-				sendCommand("t0.font=2");
+				sendCommand("t8.font=2");
 			if (::strlen((char*)talkerAlias) > (24U-4U))
-				sendCommand("t0.font=1");
+				sendCommand("t8.font=1");
 		}
 
 		if (m_screenLayout & LAYOUT_TA_COLOUR)
-			sendCommand("t0.pco=1024");
+			sendCommand("t8.pco=1024");
 
 		sendCommand(text);
 		sendCommandAction(63U);
 	} else {
 		char text[50U];
-		::sprintf(text, "t2.txt=\"2 %s %s\"", type, talkerAlias);
+		::sprintf(text, "t9.txt=\"%s %s\"", type, talkerAlias);
 
 		if (m_screenLayout & LAYOUT_TA_FONTSIZE) {
 			if (::strlen((char*)talkerAlias) > (16U-4U))
-				sendCommand("t2.font=3");
+				sendCommand("t9.font=3");
 			if (::strlen((char*)talkerAlias) > (20U-4U))
-				sendCommand("t2.font=2");
+				sendCommand("t9.font=2");
 			if (::strlen((char*)talkerAlias) > (24U-4U))
-				sendCommand("t2.font=1");
+				sendCommand("t9.font=1");
 		}
 
 		if (m_screenLayout & LAYOUT_TA_COLOUR)
-			sendCommand("t2.pco=1024");
+			sendCommand("t9.pco=1024");
 
 		sendCommand(text);
 		sendCommandAction(71U);
@@ -581,6 +637,7 @@ void CNextion::clearDMRInt(unsigned int slotNo)
 		sendCommand("t1.txt=\"\"");
 		sendCommand("t4.txt=\"\"");
 		sendCommand("t6.txt=\"\"");
+		sendCommand("t8.txt=\"\"");
 	} else {
 		sendCommand("t2.txt=\"2 Listening\"");
 		sendCommandAction(69U);
@@ -595,6 +652,7 @@ void CNextion::clearDMRInt(unsigned int slotNo)
 		sendCommand("t3.txt=\"\"");
 		sendCommand("t5.txt=\"\"");
 		sendCommand("t7.txt=\"\"");
+		sendCommand("t9.txt=\"\"");
 	}
 }
 
@@ -612,7 +670,7 @@ void CNextion::writeFusionInt(const char* source, const char* dest, unsigned cha
 
 
 	char text[30U];
-	if (m_brightness>0) {
+	if (m_brightness > 0U) {
 		::sprintf(text, "dim=%u", m_brightness);
 		sendCommand(text);
 	}
@@ -691,7 +749,7 @@ void CNextion::writeP25Int(const char* source, bool group, unsigned int dest, co
 	}
 
 	char text[30U];
-	if (m_brightness>0) {
+	if (m_brightness > 0U) {
 		::sprintf(text, "dim=%u", m_brightness);
 		sendCommand(text);
 	}
@@ -763,7 +821,7 @@ void CNextion::writeNXDNInt(const char* source, bool group, unsigned int dest, c
 	}
 
 	char text[30U];
-	if (m_brightness>0) {
+	if (m_brightness > 0U) {
 		::sprintf(text, "dim=%u", m_brightness);
 		sendCommand(text);
 	}
@@ -836,7 +894,7 @@ void CNextion::writeM17Int(const char* source, const char* dest, const char* typ
 	}
 
 	char text[30U];
-	if (m_brightness > 0) {
+	if (m_brightness > 0U) {
 		::sprintf(text, "dim=%u", m_brightness);
 		sendCommand(text);
 	}
@@ -905,7 +963,7 @@ void CNextion::writePOCSAGInt(uint32_t ric, const std::string& message)
 	}
 
 	char text[200U];
-	if (m_brightness>0) {
+	if (m_brightness > 0U) {
 		::sprintf(text, "dim=%u", m_brightness);
 		sendCommand(text);
 	}
@@ -966,23 +1024,37 @@ void CNextion::clockInt(unsigned int ms)
 
 		m_clockDisplayTimer.start(); // restart the clock display timer
 	}
+
+	if (m_socket != NULL) {
+		unsigned char buffer[200U];
+
+		int len = m_serial->read(buffer, 200U);
+		if (len > 0)
+			m_socket->write(buffer, len, m_addr, m_addrLength);
+	}
 }
 
 void CNextion::close()
 {
 	m_serial->close();
 	delete m_serial;
+
+	if (m_socket != NULL) {
+		m_socket->close();
+		delete m_socket;
+	}
 }
 
 void CNextion::sendCommandAction(unsigned int status)
 {
-    if (!(m_screenLayout & LAYOUT_DIY))
+	if (!(m_screenLayout & LAYOUT_DIY))
 		return;
 
-    char text[30U];
-    ::sprintf(text, "MMDVM.status.val=%d", status);
-    sendCommand(text);
-    sendCommand("click S0,1");
+	char text[30U];
+	::sprintf(text, "MMDVM.status.val=%d", status);
+	sendCommand(text);
+
+	sendCommand("click S0,1");
 }
 
 void CNextion::sendCommand(const char* command)
@@ -991,8 +1063,10 @@ void CNextion::sendCommand(const char* command)
 
 	m_serial->write((unsigned char*)command, (unsigned int)::strlen(command));
 	m_serial->write((unsigned char*)"\xFF\xFF\xFF", 3U);
+
 	// Since we just firing commands at the display, and not listening for the response,
 	// we must add a bit of a delay to allow the display to process the commands, else some are getting mangled.
 	// 10 ms is just a guess, but seems to be sufficient.
-    CThread::sleep(10U);
+	CThread::sleep(10U);
 }
+

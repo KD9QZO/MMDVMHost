@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2016,2017,2018,2020,2021 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2016,2017,2018,2020,2021,2023,2024 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include "ModemSerialPort.h"
 #include "NullDisplay.h"
 #include "TFTSurenoo.h"
+#include "UDPSocket.h"
 #include "LCDproc.h"
 #include "Nextion.h"
 #include "CASTInfo.h"
@@ -189,10 +190,15 @@ void CDisplay::writeDMRRSSI(unsigned int slotNo, unsigned char rssi)
 		writeDMRRSSIInt(slotNo, rssi);
 }
 
-void CDisplay::writeDMRTA(unsigned int slotNo, unsigned char* talkerAlias, const char* type)
+void CDisplay::writeDMRTA(unsigned int slotNo, const unsigned char* talkerAlias, const char* type)
 {
-    if (strcmp(type," ")==0) { writeDMRTAInt(slotNo, (unsigned char*)"", type); return; }
-    if (strlen((char*)talkerAlias)>=4U) writeDMRTAInt(slotNo, (unsigned char*)talkerAlias, type);
+	if (::strcmp(type, " ") == 0) {
+		writeDMRTAInt(slotNo, (unsigned char*)"", type);
+		return;
+	}
+
+	if (::strlen((char*)talkerAlias) >= 4U)
+		writeDMRTAInt(slotNo, (unsigned char*)talkerAlias, type);
 }
 
 void CDisplay::writeDMRBER(unsigned int slotNo, float ber)
@@ -487,7 +493,7 @@ void CDisplay::writeDMRRSSIInt(unsigned int slotNo, unsigned char rssi)
 {
 }
 
-void CDisplay::writeDMRTAInt(unsigned int slotNo, unsigned char* talkerAlias, const char* type)
+void CDisplay::writeDMRTAInt(unsigned int slotNo, const unsigned char* talkerAlias, const char* type)
 {
 }
 
@@ -548,9 +554,11 @@ CDisplay* CDisplay::createDisplay(const CConf& conf, CModem* modem)
 	if (type == "TFT Surenoo") {
 		std::string port        = conf.getTFTSerialPort();
 		unsigned int brightness = conf.getTFTSerialBrightness();
+		unsigned int screenLayout = conf.getTFTSerialScreenLayout();
 
 		LogInfo("    Port: %s", port.c_str());
 		LogInfo("    Brightness: %u", brightness);
+		LogInfo("    Screen Layout: %u", screenLayout);
 
 		ISerialPort* serial = NULL;
 		if (port == "modem")
@@ -558,7 +566,7 @@ CDisplay* CDisplay::createDisplay(const CConf& conf, CModem* modem)
 		else
 			serial = new CUARTController(port, 115200U);
 
-		display = new CTFTSurenoo(conf.getCallsign(), dmrid, serial, brightness, conf.getDuplex());
+		display = new CTFTSurenoo(conf.getCallsign(), dmrid, serial, brightness, conf.getDuplex(), screenLayout);
 	} else if (type == "Nextion") {
 		std::string port            = conf.getNextionPort();
 		unsigned int brightness     = conf.getNextionBrightness();
@@ -597,8 +605,35 @@ CDisplay* CDisplay::createDisplay(const CConf& conf, CModem* modem)
 		}
 
 		if (port == "modem") {
-			ISerialPort* serial = new IModemSerialPort(modem);
-			display = new CNextion(conf.getCallsign(), dmrid, serial, brightness, displayClock, utc, idleBrightness, screenLayout, txFrequency, rxFrequency, displayTempInF);
+			CUDPSocket* socket = NULL;
+			struct sockaddr_storage addr;
+			unsigned int addrLength = 0U;
+
+			bool nextionOutput = conf.getNextionOutput();
+			if (nextionOutput) {
+				unsigned short nextionUDPPort = conf.getNextionUDPPort();
+
+				LogInfo("    Output Port: %u", nextionUDPPort);
+
+				CUDPSocket::lookup("127.0.0.1", nextionUDPPort, addr, addrLength);
+
+				if (addrLength > 0U) {
+					socket = new CUDPSocket("127.0.0.1", nextionUDPPort - 1U);
+					bool ret = socket->open(addr);
+					if (!ret) {
+						delete socket;
+						socket = NULL;
+					}
+				}
+			}
+
+			if (socket == NULL) {
+				ISerialPort* serial = new IModemSerialPort(modem);
+				display = new CNextion(conf.getCallsign(), dmrid, serial, brightness, displayClock, utc, idleBrightness, screenLayout, txFrequency, rxFrequency, displayTempInF);
+			} else {
+				ISerialPort* serial = new IModemSerialPort(modem);
+				display = new CNextion(conf.getCallsign(), dmrid, serial, brightness, displayClock, utc, idleBrightness, screenLayout, txFrequency, rxFrequency, displayTempInF, socket, addr, addrLength);
+			}
 		} else {
 			unsigned int baudrate = 9600U;
 			if (screenLayout == 4U)

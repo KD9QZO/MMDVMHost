@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015-2021 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015-2023 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -290,6 +290,8 @@ m_pocsagNetworkModeHang(3U),
 m_pocsagNetworkDebug(false),
 m_fmNetworkEnabled(false),
 m_fmNetworkProtocol("USRP"),
+m_fmNetworkSampleRate(48000U),
+m_fmNetworkSquelchFile(),
 m_fmGatewayAddress(),
 m_fmGatewayPort(0U),
 m_fmLocalAddress(),
@@ -306,6 +308,7 @@ m_ax25NetworkSpeed(9600U),
 m_ax25NetworkDebug(false),
 m_tftSerialPort("/dev/ttyAMA0"),
 m_tftSerialBrightness(50U),
+m_tftSerialScreenLayout(0U),
 m_hd44780Rows(2U),
 m_hd44780Columns(16U),
 m_hd44780Pins(),
@@ -323,6 +326,8 @@ m_nextionUTC(false),
 m_nextionIdleBrightness(20U),
 m_nextionScreenLayout(0U),
 m_nextionTempInFahrenheit(false),
+m_nextionOutput(false),
+m_nextionUDPPort(6759),
 m_oledType(3U),
 m_oledBrightness(0U),
 m_oledInvert(false),
@@ -1033,6 +1038,10 @@ bool CConf::read()
 				m_fmNetworkEnabled = ::atoi(value) == 1;
 			else if (::strcmp(key, "Protocol") == 0)
 				m_fmNetworkProtocol = value;
+			else if (::strcmp(key, "SampleRate") == 0)
+				m_fmNetworkSampleRate = (unsigned int)::atoi(value);
+			else if (::strcmp(key, "SquelchFile") == 0)
+				m_fmNetworkSquelchFile = value;
 			else if (::strcmp(key, "LocalAddress") == 0)
 				m_fmLocalAddress = value;
 			else if (::strcmp(key, "LocalPort") == 0)
@@ -1067,6 +1076,8 @@ bool CConf::read()
 				m_tftSerialPort = value;
 			else if (::strcmp(key, "Brightness") == 0)
 				m_tftSerialBrightness = (unsigned int)::atoi(value);
+			else if (::strcmp(key, "ScreenLayout") == 0)
+				m_tftSerialScreenLayout = (unsigned int)::atoi(value);
 		} else if (section == SECTION_HD44780) {
 			if (::strcmp(key, "Rows") == 0)
 				m_hd44780Rows = (unsigned int)::atoi(value);
@@ -1109,6 +1120,10 @@ bool CConf::read()
 				m_nextionScreenLayout = (unsigned int)::strtoul(value, NULL, 0);
 			else if (::strcmp(key, "DisplayTempInFahrenheit") == 0)
 				m_nextionTempInFahrenheit = ::atoi(value) == 1;
+			else if (::strcmp(key, "NextionOutput") == 0)
+				m_nextionOutput = ::atoi(value) == 1;
+			else if (::strcmp(key, "NextionUDPPort") == 0)
+				m_nextionUDPPort = (unsigned short)::atoi(value);
 		} else if (section == SECTION_OLED) {
 			if (::strcmp(key, "Type") == 0)
 				m_oledType = (unsigned char)::atoi(value);
@@ -2273,6 +2288,16 @@ std::string CConf::getFMNetworkProtocol() const
 	return m_fmNetworkProtocol;
 }
 
+unsigned int CConf::getFMNetworkSampleRate() const
+{
+	return m_fmNetworkSampleRate;
+}
+
+std::string CConf::getFMNetworkSquelchFile() const
+{
+	return m_fmNetworkSquelchFile;
+}
+
 std::string CConf::getFMGatewayAddress() const
 {
 	return m_fmGatewayAddress;
@@ -2351,6 +2376,11 @@ std::string CConf::getTFTSerialPort() const
 unsigned int CConf::getTFTSerialBrightness() const
 {
 	return m_tftSerialBrightness;
+}
+
+unsigned int CConf::getTFTSerialScreenLayout() const
+{
+	return m_tftSerialScreenLayout;
 }
 
 unsigned int CConf::getHD44780Rows() const
@@ -2433,6 +2463,21 @@ unsigned int CConf::getNextionScreenLayout() const
 	return m_nextionScreenLayout;
 }
 
+bool CConf::getNextionTempInFahrenheit() const
+{
+	return m_nextionTempInFahrenheit;
+}
+
+bool CConf::getNextionOutput() const
+{
+	return m_nextionOutput;
+}
+
+unsigned short CConf::getNextionUDPPort() const
+{
+	return m_nextionUDPPort;
+}
+
 unsigned char CConf::getOLEDType() const
 {
 	return m_oledType;
@@ -2491,11 +2536,6 @@ bool CConf::getLCDprocUTC() const
 bool CConf::getLCDprocDimOnIdle() const
 {
 	return m_lcdprocDimOnIdle;
-}
-
-bool CConf::getNextionTempInFahrenheit() const
-{
-	return m_nextionTempInFahrenheit;
 }
 
 bool CConf::getLockFileEnabled() const

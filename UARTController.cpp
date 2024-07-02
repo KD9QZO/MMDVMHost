@@ -61,6 +61,7 @@ bool CUARTController::open() {
 	assert(m_handle == INVALID_HANDLE_VALUE);
 
 	DWORD errCode;
+
 	std::string baseName = m_device.substr(4U);		// Convert "\\.\COM10" to "COM10"
 
 	m_handle = ::CreateFileA(m_device.c_str(), (GENERIC_READ | GENERIC_WRITE), 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -303,63 +304,63 @@ bool CUARTController::setRaw() {
 			::cfsetospeed(&termios, B2400);
 			::cfsetispeed(&termios, B2400);
 			break;
-#endif /*B2400*/
+#endif	/* B2400 */
 
 #if defined(B4800)
 		case 4800U:
 			::cfsetospeed(&termios, B4800);
 			::cfsetispeed(&termios, B4800);
 			break;
-#endif /*B4800*/
+#endif	/* B4800 */
 
 #if defined(B9600)
 		case 9600U:
 			::cfsetospeed(&termios, B9600);
 			::cfsetispeed(&termios, B9600);
 			break;
-#endif /*B9600*/
+#endif	/* B9600 */
 
 #if defined(B19200)
 		case 19200U:
 			::cfsetospeed(&termios, B19200);
 			::cfsetispeed(&termios, B19200);
 			break;
-#endif /*B19200*/
+#endif	/* B19200 */
 
 #if defined(B38400)
 		case 38400U:
 			::cfsetospeed(&termios, B38400);
 			::cfsetispeed(&termios, B38400);
 			break;
-#endif /*B38400*/
+#endif	/* B38400 */
 
 #if defined(B57600)
 		case 57600U:
 			::cfsetospeed(&termios, B57600);
 			::cfsetispeed(&termios, B57600);
 			break;
-#endif /*B57600*/
+#endif	/* B57600 */
 
 #if defined(B115200)
 		case 115200U:
 			::cfsetospeed(&termios, B115200);
 			::cfsetispeed(&termios, B115200);
 			break;
-#endif /*B115200*/
+#endif	/* B115200 */
 
 #if defined(B230400)
 		case 230400U:
 			::cfsetospeed(&termios, B230400);
 			::cfsetispeed(&termios, B230400);
 			break;
-#endif /*B230400*/
+#endif	/* B230400 */
 
 #if defined(B460800)
 		case 460800U:
  			::cfsetospeed(&termios, B460800);
  			::cfsetispeed(&termios, B460800);
 			break;
-#endif /*B460800*/
+#endif	/* B460800 */
 
 #if defined(B500000)
 		case 500000U:
