@@ -1,6 +1,6 @@
 /*
  *   Copyright (C) 2016,2017,2018 by Tony Corbett G0WFV
- *   Copyright (C) 2018,2020,2024 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2018,2020,2024,2025 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -78,7 +78,11 @@
 
 #define BUFFER_MAX_LEN 128
 
+#if defined(_WIN32) || defined(_WIN64)
+SOCKET         m_socketfd;
+#else
 int            m_socketfd;
+#endif
 char           m_buffer[BUFFER_MAX_LEN];
 fd_set         m_readfds, m_writefds;
 struct timeval m_timeout;
@@ -96,7 +100,6 @@ const unsigned int DMR_RSSI_COUNT   = 4U;		// 4 * 360ms = 1440ms
 const unsigned int YSF_RSSI_COUNT   = 13U;		// 13 * 100ms = 1300ms
 const unsigned int P25_RSSI_COUNT   = 7U;		// 7 * 180ms = 1260ms
 const unsigned int NXDN_RSSI_COUNT  = 28U;		// 28 * 40ms = 1120ms
-const unsigned int M17_RSSI_COUNT   = 28U;		// 28 * 40ms = 1120ms
 
 CLCDproc::CLCDproc(std::string address, unsigned int port, unsigned short localPort, const std::string& callsign, unsigned int dmrid, bool displayClock, bool utc, bool duplex, bool dimOnIdle) :
 CDisplay(),
@@ -141,13 +144,13 @@ bool CLCDproc::open()
 		LogError("LCDproc, cannot lookup server");
 		return false;
 	}
-	memcpy(&serverAddress, res->ai_addr, addrlen = res->ai_addrlen);
+	memcpy(&serverAddress, res->ai_addr, addrlen = (unsigned int)res->ai_addrlen);
 	freeaddrinfo(res);
 
 	/* Lookup the client address (random port - need to specify manual port from ini file) */
 	hints.ai_flags = AI_NUMERICSERV | AI_PASSIVE;
 	hints.ai_family = serverAddress.ss_family;
-	err = getaddrinfo(NULL, localPort.c_str(), &hints, &res);
+	err = getaddrinfo(nullptr, localPort.c_str(), &hints, &res);
 	if (err) {
 		LogError("LCDproc, cannot lookup client");
 		return false;
@@ -157,7 +160,11 @@ bool CLCDproc::open()
 
 	/* Create TCP socket */
 	m_socketfd = socket(clientAddress.ss_family, SOCK_STREAM, 0);
+#if defined(_WIN32) || defined(_WIN64)
+	if (m_socketfd == INVALID_SOCKET) {
+#else
 	if (m_socketfd == -1) {
+#endif
 		LogError("LCDproc, failed to create socket");
 		return false;
 	}
@@ -190,7 +197,6 @@ void CLCDproc::setIdleInt()
 		socketPrintf(m_socketfd, "screen_set YSF -priority hidden");
 		socketPrintf(m_socketfd, "screen_set P25 -priority hidden");
 		socketPrintf(m_socketfd, "screen_set NXDN -priority hidden");
-		socketPrintf(m_socketfd, "screen_set M17 -priority hidden");
 		socketPrintf(m_socketfd, "widget_set Status Status %u %u Idle", m_cols - 3, m_rows);
 		socketPrintf(m_socketfd, "output 0");   // Clear all LEDs
 	}
@@ -200,7 +206,7 @@ void CLCDproc::setIdleInt()
 
 void CLCDproc::setErrorInt(const char* text)
 {
-	assert(text != NULL);
+	assert(text != nullptr);
 
 	m_clockDisplayTimer.stop();           // Stop the clock display
 
@@ -210,7 +216,6 @@ void CLCDproc::setErrorInt(const char* text)
 		socketPrintf(m_socketfd, "screen_set YSF -priority hidden");
 		socketPrintf(m_socketfd, "screen_set P25 -priority hidden");
 		socketPrintf(m_socketfd, "screen_set NXDN -priority hidden");
-		socketPrintf(m_socketfd, "screen_set M17 -priority hidden");
 		socketPrintf(m_socketfd, "widget_set Status Status %u %u Error", m_cols - 4, m_rows);
 		socketPrintf(m_socketfd, "output 0");   // Clear all LEDs
 	}
@@ -228,7 +233,6 @@ void CLCDproc::setLockoutInt()
 		socketPrintf(m_socketfd, "screen_set YSF -priority hidden");
 		socketPrintf(m_socketfd, "screen_set P25 -priority hidden");
 		socketPrintf(m_socketfd, "screen_set NXDN -priority hidden");
-		socketPrintf(m_socketfd, "screen_set M17 -priority hidden");
 		socketPrintf(m_socketfd, "widget_set Status Status %u %u Lockout", m_cols - 6, m_rows);
 		socketPrintf(m_socketfd, "output 0");   // Clear all LEDs
 	}
@@ -248,7 +252,6 @@ void CLCDproc::setQuitInt()
 		socketPrintf(m_socketfd, "screen_set YSF -priority hidden");
 		socketPrintf(m_socketfd, "screen_set P25 -priority hidden");
 		socketPrintf(m_socketfd, "screen_set NXDN -priority hidden");
-		socketPrintf(m_socketfd, "screen_set M17 -priority hidden");
 		socketPrintf(m_socketfd, "widget_set Status Status %u %u Stopped", m_cols - 6, m_rows);
 		socketPrintf(m_socketfd, "output 0");   // Clear all LEDs
 	}
@@ -266,7 +269,6 @@ void CLCDproc::setFMInt()
 		socketPrintf(m_socketfd, "screen_set YSF -priority hidden");
 		socketPrintf(m_socketfd, "screen_set P25 -priority hidden");
 		socketPrintf(m_socketfd, "screen_set NXDN -priority hidden");
-		socketPrintf(m_socketfd, "screen_set M17 -priority hidden");
 		socketPrintf(m_socketfd, "widget_set Status Status %u %u FM", m_cols - 6, m_rows);
 		socketPrintf(m_socketfd, "output 0");   // Clear all LEDs
 	}
@@ -276,11 +278,11 @@ void CLCDproc::setFMInt()
 
 void CLCDproc::writeDStarInt(const char* my1, const char* my2, const char* your, const char* type, const char* reflector)
 {
-	assert(my1 != NULL);
-	assert(my2 != NULL);
-	assert(your != NULL);
-	assert(type != NULL);
-	assert(reflector != NULL);
+	assert(my1 != nullptr);
+	assert(my2 != nullptr);
+	assert(your != nullptr);
+	assert(type != nullptr);
+	assert(reflector != nullptr);
 
 	m_clockDisplayTimer.stop();           // Stop the clock display
 
@@ -337,7 +339,7 @@ void CLCDproc::clearDStarInt()
 
 void CLCDproc::writeDMRInt(unsigned int slotNo, const std::string& src, bool group, const std::string& dst, const char* type)
 {
-	assert(type != NULL);
+	assert(type != nullptr);
 
 	if (!m_dmr) {
 		m_clockDisplayTimer.stop();          // Stop the clock display
@@ -431,10 +433,10 @@ void CLCDproc::clearDMRInt(unsigned int slotNo)
 
 void CLCDproc::writeFusionInt(const char* source, const char* dest, unsigned char dgid, const char* type, const char* origin)
 {
-	assert(source != NULL);
-	assert(dest != NULL);
-	assert(type != NULL);
-	assert(origin != NULL);
+	assert(source != nullptr);
+	assert(dest != nullptr);
+	assert(type != nullptr);
+	assert(origin != nullptr);
 
 	m_clockDisplayTimer.stop();           // Stop the clock display
 
@@ -477,8 +479,8 @@ void CLCDproc::clearFusionInt()
 
 void CLCDproc::writeP25Int(const char* source, bool group, unsigned int dest, const char* type)
 {
-	assert(source != NULL);
-	assert(type != NULL);
+	assert(source != nullptr);
+	assert(type != nullptr);
 
 	m_clockDisplayTimer.stop();           // Stop the clock display
 
@@ -522,8 +524,8 @@ void CLCDproc::clearP25Int()
 
 void CLCDproc::writeNXDNInt(const char* source, bool group, unsigned int dest, const char* type)
 {
-	assert(source != NULL);
-	assert(type != NULL);
+	assert(source != nullptr);
+	assert(type != nullptr);
 
 	m_clockDisplayTimer.stop();           // Stop the clock display
 
@@ -560,51 +562,6 @@ void CLCDproc::clearNXDNInt()
 	socketPrintf(m_socketfd, "widget_set NXDN Line2 1 2 15 2 h 3 \"Listening\"");
 	socketPrintf(m_socketfd, "widget_set NXDN Line3 1 3 15 3 h 3 \"\"");
 	socketPrintf(m_socketfd, "widget_set NXDN Line4 1 4 15 4 h 3 \"\"");
-	socketPrintf(m_socketfd, "output 16"); // Set LED5 color green
-}
-
-void CLCDproc::writeM17Int(const char* source, const char* dest, const char* type)
-{
-	assert(source != NULL);
-	assert(dest != NULL);
-	assert(type != NULL);
-
-	m_clockDisplayTimer.stop();           // Stop the clock display
-
-	socketPrintf(m_socketfd, "screen_set M17 -priority foreground");
-	socketPrintf(m_socketfd, "widget_set M17 Mode 1 1 M17");
-
-	if (m_rows == 2U) {
-		socketPrintf(m_socketfd, "widget_set M17 Line2 1 2 15 2 h 3 \"%.9s > %.9s\"", source, dest);
-	}
-	else {
-		socketPrintf(m_socketfd, "widget_set M17 Line2 1 2 15 2 h 3 \"%.9s >\"", source);
-		socketPrintf(m_socketfd, "widget_set M17 Line3 1 3 15 3 h 3 \"%.9ss\"", dest);
-		socketPrintf(m_socketfd, "output 255"); // Set LED5 color red
-	}
-
-	m_dmr = false;
-	m_rssiCount1 = 0U;
-}
-
-void CLCDproc::writeM17RSSIInt(unsigned char rssi)
-{
-	if (m_rssiCount1 == 0U) {
-		socketPrintf(m_socketfd, "widget_set M17 Line4 1 4 %u 4 h 3 \"-%3udBm\"", m_cols - 1, rssi);
-	}
-
-	m_rssiCount1++;
-	if (m_rssiCount1 >= M17_RSSI_COUNT)
-		m_rssiCount1 = 0U;
-}
-
-void CLCDproc::clearM17Int()
-{
-	m_clockDisplayTimer.stop();           // Stop the clock display
-
-	socketPrintf(m_socketfd, "widget_set M17 Line2 1 2 15 2 h 3 \"Listening\"");
-	socketPrintf(m_socketfd, "widget_set M17 Line3 1 3 15 3 h 3 \"\"");
-	socketPrintf(m_socketfd, "widget_set M17 Line4 1 4 15 4 h 3 \"\"");
 	socketPrintf(m_socketfd, "output 16"); // Set LED5 color green
 }
 
@@ -671,7 +628,7 @@ void CLCDproc::clockInt(unsigned int ms)
 	 * exceptfds = we are not waiting for exception fds
 	 */
 
-	if (select(m_socketfd + 1, &m_readfds, NULL, NULL, &m_timeout) == -1) {
+	if (select(int(m_socketfd) + 1, &m_readfds, nullptr, nullptr, &m_timeout) == -1) {
 		LogError("LCDproc, error on select");
 		return;
 	}
@@ -767,7 +724,11 @@ void CLCDproc::close()
 {
 }
 
+#if defined(_WIN32) || defined(_WIN64)
+int CLCDproc::socketPrintf(SOCKET fd, const char* format, ...)
+#else
 int CLCDproc::socketPrintf(int fd, const char *format, ...)
+#endif
 {
 	char buf[BUFFER_MAX_LEN];
 	va_list ap;
@@ -790,7 +751,7 @@ int CLCDproc::socketPrintf(int fd, const char *format, ...)
 	m_timeout.tv_sec = 0;
 	m_timeout.tv_usec = 0;
 
-	if (select(m_socketfd + 1, NULL, &m_writefds, NULL, &m_timeout) == -1)
+	if (select(int(m_socketfd) + 1, nullptr, &m_writefds, nullptr, &m_timeout) == -1)
 		LogError("LCDproc, error on select");
 
 	if (FD_ISSET(m_socketfd, &m_writefds)) {
@@ -905,22 +866,5 @@ void CLCDproc::defineScreens()
 	socketPrintf(m_socketfd, "widget_set NXDN Line3 3 1 15 1 h 3 \" \"");
 	socketPrintf(m_socketfd, "widget_set NXDN Line4 4 2 15 2 h 3 \" \"");
 */
-
-// The M17 Screen
-
-	socketPrintf(m_socketfd, "screen_add M17");
-	socketPrintf(m_socketfd, "screen_set M17 -name M17 -heartbeat on -priority hidden -backlight on");
-
-	socketPrintf(m_socketfd, "widget_add M17 Mode string");
-	socketPrintf(m_socketfd, "widget_add M17 Line2 scroller");
-	socketPrintf(m_socketfd, "widget_add M17 Line3 scroller");
-	socketPrintf(m_socketfd, "widget_add M17 Line4 scroller");
-
-	/* Do we need to pre-populate the values??
-		socketPrintf(m_socketfd, "widget_set M17 Line3 2 1 15 1 h 3 \"Listening\"");
-		socketPrintf(m_socketfd, "widget_set M17 Line3 3 1 15 1 h 3 \" \"");
-		socketPrintf(m_socketfd, "widget_set M17 Line4 4 2 15 2 h 3 \" \"");
-	*/
-
 	m_screensDefined = true;
 }

@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2016,2017,2018,2020,2023,2024 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2016,2017,2018,2020,2023,2024,2025 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -36,8 +36,6 @@ const unsigned int P25_RSSI_COUNT   = 7U;		  // 7 * 180ms = 1260ms
 const unsigned int P25_BER_COUNT    = 7U;		  // 7 * 180ms = 1260ms
 const unsigned int NXDN_RSSI_COUNT  = 28U;		  // 28 * 40ms = 1120ms
 const unsigned int NXDN_BER_COUNT   = 28U;		  // 28 * 40ms = 1120ms
-const unsigned int M17_RSSI_COUNT   = 28U;		  // 28 * 40ms = 1120ms
-const unsigned int M17_BER_COUNT    = 28U;		  // 28 * 40ms = 1120ms
 
 #define LAYOUT_COMPAT_MASK	(7 << 0) // compatibility for old setting
 #define LAYOUT_TA_ENABLE	(1 << 4) // enable Talker Alias (TA) display
@@ -79,9 +77,9 @@ m_socket(socket),
 m_addr(addr),
 m_addrLength(addrLength)
 {
-	assert(serial != NULL);
+	assert(serial != nullptr);
 	assert(brightness >= 0U && brightness <= 100U);
-	assert(socket != NULL);
+	assert(socket != nullptr);
 	assert(addrLength > 0U);
 
 	static const unsigned int feature_set[] = {
@@ -128,11 +126,11 @@ m_rxFrequency(rxFrequency),
 m_fl_txFrequency(0.0F),
 m_fl_rxFrequency(0.0F),
 m_displayTempInF(displayTempInF),
-m_socket(NULL),
+m_socket(nullptr),
 m_addr(),
 m_addrLength(0U)
 {
-	assert(serial != NULL);
+	assert(serial != nullptr);
 	assert(brightness >= 0U && brightness <= 100U);
 
 	static const unsigned int feature_set[] = {
@@ -218,7 +216,7 @@ void CNextion::setIdleInt()
 	
 		// CPU temperature
 		FILE* fp = ::fopen("/sys/class/thermal/thermal_zone0/temp", "rt");
-		if (fp != NULL) {
+		if (fp != nullptr) {
 			double val = 0.0;
 			int n = ::fscanf(fp, "%lf", &val);
 			::fclose(fp);
@@ -253,7 +251,7 @@ void CNextion::setIdleInt()
 
 void CNextion::setErrorInt(const char* text)
 {
-	assert(text != NULL);
+	assert(text != nullptr);
 
 	sendCommand("page MMDVM");
 	sendCommandAction(1U);
@@ -339,11 +337,11 @@ void CNextion::setFMInt()
 
 void CNextion::writeDStarInt(const char* my1, const char* my2, const char* your, const char* type, const char* reflector)
 {
-	assert(my1 != NULL);
-	assert(my2 != NULL);
-	assert(your != NULL);
-	assert(type != NULL);
-	assert(reflector != NULL);
+	assert(my1 != nullptr);
+	assert(my2 != nullptr);
+	assert(your != nullptr);
+	assert(type != nullptr);
+	assert(reflector != nullptr);
 
 	if (m_mode != MODE_DSTAR) {
 		sendCommand("page DStar");
@@ -421,7 +419,7 @@ void CNextion::clearDStarInt()
 
 void CNextion::writeDMRInt(unsigned int slotNo, const std::string& src, bool group, const std::string& dst, const char* type)
 {
-	assert(type != NULL);
+	assert(type != nullptr);
 
 	if (m_mode != MODE_DMR) {
 		sendCommand("page DMR");
@@ -658,10 +656,10 @@ void CNextion::clearDMRInt(unsigned int slotNo)
 
 void CNextion::writeFusionInt(const char* source, const char* dest, unsigned char dgid, const char* type, const char* origin)
 {
-	assert(source != NULL);
-	assert(dest != NULL);
-	assert(type != NULL);
-	assert(origin != NULL);
+	assert(source != nullptr);
+	assert(dest != nullptr);
+	assert(type != nullptr);
+	assert(origin != nullptr);
 
 	if (m_mode != MODE_YSF) {
 		sendCommand("page YSF");
@@ -740,8 +738,8 @@ void CNextion::clearFusionInt()
 
 void CNextion::writeP25Int(const char* source, bool group, unsigned int dest, const char* type)
 {
-	assert(source != NULL);
-	assert(type != NULL);
+	assert(source != nullptr);
+	assert(type != nullptr);
 
 	if (m_mode != MODE_P25) {
 		sendCommand("page P25");
@@ -812,8 +810,8 @@ void CNextion::clearP25Int()
 
 void CNextion::writeNXDNInt(const char* source, bool group, unsigned int dest, const char* type)
 {
-	assert(source != NULL);
-	assert(type != NULL);
+	assert(source != nullptr);
+	assert(type != nullptr);
 
 	if (m_mode != MODE_NXDN) {
 		sendCommand("page NXDN");
@@ -877,79 +875,6 @@ void CNextion::clearNXDNInt()
 {
 	sendCommand("t0.txt=\"Listening\"");
 	sendCommandAction(121U);
-	sendCommand("t1.txt=\"\"");
-	sendCommand("t2.txt=\"\"");
-	sendCommand("t3.txt=\"\"");
-}
-
-void CNextion::writeM17Int(const char* source, const char* dest, const char* type)
-{
-	assert(source != NULL);
-	assert(dest != NULL);
-	assert(type != NULL);
-
-	if (m_mode != MODE_M17) {
-		sendCommand("page M17");
-		sendCommandAction(8U);
-	}
-
-	char text[30U];
-	if (m_brightness > 0U) {
-		::sprintf(text, "dim=%u", m_brightness);
-		sendCommand(text);
-	}
-
-	::sprintf(text, "t0.txt=\"%s %.10s\"", type, source);
-	sendCommand(text);
-	sendCommandAction(142U);
-
-	::sprintf(text, "t1.txt=\"%s\"", dest);
-	sendCommand(text);
-	sendCommandAction(143U);
-
-	m_clockDisplayTimer.stop();
-
-	m_mode = MODE_M17;
-	m_rssiAccum1 = 0U;
-	m_berAccum1 = 0.0F;
-	m_rssiCount1 = 0U;
-	m_berCount1 = 0U;
-}
-
-void CNextion::writeM17RSSIInt(unsigned char rssi)
-{
-	m_rssiAccum1 += rssi;
-	m_rssiCount1++;
-
-	if (m_rssiCount1 == M17_RSSI_COUNT) {
-		char text[25U];
-		::sprintf(text, "t2.txt=\"-%udBm\"", m_rssiAccum1 / M17_RSSI_COUNT);
-		sendCommand(text);
-		sendCommandAction(144U);
-		m_rssiAccum1 = 0U;
-		m_rssiCount1 = 0U;
-	}
-}
-
-void CNextion::writeM17BERInt(float ber)
-{
-	m_berAccum1 += ber;
-	m_berCount1++;
-
-	if (m_berCount1 == M17_BER_COUNT) {
-		char text[25U];
-		::sprintf(text, "t3.txt=\"%.1f%%\"", m_berAccum1 / float(M17_BER_COUNT));
-		sendCommand(text);
-		sendCommandAction(145U);
-		m_berAccum1 = 0.0F;
-		m_berCount1 = 0U;
-	}
-}
-
-void CNextion::clearM17Int()
-{
-	sendCommand("t0.txt=\"Listening\"");
-	sendCommandAction(141U);
 	sendCommand("t1.txt=\"\"");
 	sendCommand("t2.txt=\"\"");
 	sendCommand("t3.txt=\"\"");
@@ -1025,7 +950,7 @@ void CNextion::clockInt(unsigned int ms)
 		m_clockDisplayTimer.start(); // restart the clock display timer
 	}
 
-	if (m_socket != NULL) {
+	if (m_socket != nullptr) {
 		unsigned char buffer[200U];
 
 		int len = m_serial->read(buffer, 200U);
@@ -1039,7 +964,7 @@ void CNextion::close()
 	m_serial->close();
 	delete m_serial;
 
-	if (m_socket != NULL) {
+	if (m_socket != nullptr) {
 		m_socket->close();
 		delete m_socket;
 	}
@@ -1059,7 +984,7 @@ void CNextion::sendCommandAction(unsigned int status)
 
 void CNextion::sendCommand(const char* command)
 {
-	assert(command != NULL);
+	assert(command != nullptr);
 
 	m_serial->write((unsigned char*)command, (unsigned int)::strlen(command));
 	m_serial->write((unsigned char*)"\xFF\xFF\xFF", 3U);

@@ -2,8 +2,11 @@
 
 # If you have the resampler library installed, add -DHAS_SRC to the CFLAGS line, and -lsamplerate to the LIBS line.
 
-CC      ?= cc
-CXX     ?= c++
+CC      = cc
+CXX     = c++
+CFLAGS  = -g -O3 -Wall -std=c++0x -pthread -DHAVE_LOG_H -I/usr/local/include
+LIBS    = -lpthread -lutil
+#LDFLAGS = -g -L/usr/local/lib
 
 RM      ?= rm
 MKDIR   ?= mkdir
@@ -115,7 +118,7 @@ OBJECTS := \
 		QR1676.o \
 		RemoteControl.o \
 		RS129.o \
-		RS241213.o \
+		RS634717.o \
 		RSSIInterpolator.o \
 		SerialPort.o \
 		SMeter.o \

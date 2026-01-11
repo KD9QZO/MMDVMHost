@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2011-2018,2020,2021 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2011-2018,2020,2021,2025 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -26,18 +26,18 @@
 
 #include <string>
 
-enum RESP_TYPE_MMDVM {
-	RTM_OK,
-	RTM_TIMEOUT,
-	RTM_ERROR
+enum class RESP_TYPE_MMDVM {
+	OK,
+	TIMEOUT,
+	ERR
 };
 
-enum SERIAL_STATE {
-	SS_START,
-	SS_LENGTH1,
-	SS_LENGTH2,
-	SS_TYPE,
-	SS_DATA
+enum class SERIAL_STATE {
+	START,
+	LENGTH1,
+	LENGTH2,
+	TYPE,
+	DATA
 };
 
 class CModem {
@@ -47,14 +47,12 @@ public:
 
 	void setPort(IModemPort* port);
 	void setRFParams(unsigned int rxFrequency, int rxOffset, unsigned int txFrequency, int txOffset, int txDCOffset, int rxDCOffset, float rfLevel, unsigned int pocsagFrequency);
-	void setModeParams(bool dstarEnabled, bool dmrEnabled, bool ysfEnabled, bool p25Enabled, bool nxdnEnabled, bool m17Enabled, bool pocsagEnabled, bool fmEnabled, bool ax25Enabled);
-	void setLevels(float rxLevel, float cwIdTXLevel, float dstarTXLevel, float dmrTXLevel, float ysfTXLevel, float p25TXLevel, float nxdnTXLevel, float m17TXLevel, float pocsagLevel, float fmTXLevel, float ax25TXLevel);
+	void setModeParams(bool dstarEnabled, bool dmrEnabled, bool ysfEnabled, bool p25Enabled, bool nxdnEnabled, bool pocsagEnabled, bool fmEnabled);
+	void setLevels(float rxLevel, float cwIdTXLevel, float dstarTXLevel, float dmrTXLevel, float ysfTXLevel, float p25TXLevel, float nxdnTXLevel, float pocsagLevel, float fmTXLevel);
 	void setDMRParams(unsigned int colorCode);
 	void setYSFParams(bool loDev, unsigned int txHang);
 	void setP25Params(unsigned int txHang);
 	void setNXDNParams(unsigned int txHang);
-	void setM17Params(unsigned int txHang);
-	void setAX25Params(int rxTwist, unsigned int txDelay, unsigned int slotTime, unsigned int pPersist);
 	void setTransparentDataParams(unsigned int sendFrameType);
 
 	void setFMCallsignParams(const std::string& callsign, unsigned int callsignSpeed, unsigned int callsignFrequency, unsigned int callsignTime, unsigned int callsignHoldoff, float callsignHighLevel, float callsignLowLevel, bool callsignAtStart, bool callsignAtEnd, bool callsignAtLatch);
@@ -69,10 +67,8 @@ public:
 	bool hasYSF() const;
 	bool hasP25() const;
 	bool hasNXDN() const;
-	bool hasM17() const;
 	bool hasPOCSAG() const;
 	bool hasFM() const;
-	bool hasAX25() const;
 
 	unsigned int getVersion() const;
 
@@ -82,9 +78,7 @@ public:
 	unsigned int readYSFData(unsigned char* data);
 	unsigned int readP25Data(unsigned char* data);
 	unsigned int readNXDNData(unsigned char* data);
-	unsigned int readM17Data(unsigned char* data);
 	unsigned int readFMData(unsigned char* data);
-	unsigned int readAX25Data(unsigned char* data);
 
 	bool hasDStarSpace() const;
 	bool hasDMRSpace1() const;
@@ -92,10 +86,8 @@ public:
 	bool hasYSFSpace() const;
 	bool hasP25Space() const;
 	bool hasNXDNSpace() const;
-	bool hasM17Space() const;
 	bool hasPOCSAGSpace() const;
 	unsigned int getFMSpace() const;
-	bool hasAX25Space() const;
 
 	bool hasTX() const;
 	bool hasCD() const;
@@ -110,17 +102,14 @@ public:
 	bool writeYSFData(const unsigned char* data, unsigned int length);
 	bool writeP25Data(const unsigned char* data, unsigned int length);
 	bool writeNXDNData(const unsigned char* data, unsigned int length);
-	bool writeM17Data(const unsigned char* data, unsigned int length);
 	bool writePOCSAGData(const unsigned char* data, unsigned int length);
 	bool writeFMData(const unsigned char* data, unsigned int length);
-	bool writeAX25Data(const unsigned char* data, unsigned int length);
 
 	bool writeDStarInfo(const char* my1, const char* my2, const char* your, const char* type, const char* reflector);
 	bool writeDMRInfo(unsigned int slotNo, const std::string& src, bool group, const std::string& dst, const char* type);
 	bool writeYSFInfo(const char* source, const char* dest, unsigned char dgid, const char* type, const char* origin);
 	bool writeP25Info(const char* source, bool group, unsigned int dest, const char* type);
 	bool writeNXDNInfo(const char* source, bool group, unsigned int dest, const char* type);
-	bool writeM17Info(const char* source, const char* dest, const char* type);
 	bool writePOCSAGInfo(unsigned int ric, const std::string& message);
 	bool writeIPInfo(const std::string& address);
 
@@ -152,7 +141,6 @@ private:
 	unsigned int               m_ysfTXHang;
 	unsigned int               m_p25TXHang;
 	unsigned int               m_nxdnTXHang;
-	unsigned int               m_m17TXHang;
 	bool                       m_duplex;
 	bool                       m_rxInvert;
 	bool                       m_txInvert;
@@ -166,10 +154,8 @@ private:
 	float                      m_ysfTXLevel;
 	float                      m_p25TXLevel;
 	float                      m_nxdnTXLevel;
-	float                      m_m17TXLevel;
 	float                      m_pocsagTXLevel;
 	float                      m_fmTXLevel;
-	float                      m_ax25TXLevel;
 	float                      m_rfLevel;
 	bool                       m_useCOSAsLockout;
 	bool                       m_trace;
@@ -182,10 +168,8 @@ private:
 	bool                       m_ysfEnabled;
 	bool                       m_p25Enabled;
 	bool                       m_nxdnEnabled;
-	bool                       m_m17Enabled;
 	bool                       m_pocsagEnabled;
 	bool                       m_fmEnabled;
-	bool                       m_ax25Enabled;
 	int                        m_rxDCOffset;
 	int                        m_txDCOffset;
 	IModemPort*                m_port;
@@ -206,13 +190,9 @@ private:
 	CRingBuffer<unsigned char> m_txP25Data;
 	CRingBuffer<unsigned char> m_rxNXDNData;
 	CRingBuffer<unsigned char> m_txNXDNData;
-	CRingBuffer<unsigned char> m_rxM17Data;
-	CRingBuffer<unsigned char> m_txM17Data;
 	CRingBuffer<unsigned char> m_txPOCSAGData;
 	CRingBuffer<unsigned char> m_rxFMData;
 	CRingBuffer<unsigned char> m_txFMData;
-	CRingBuffer<unsigned char> m_rxAX25Data;
-	CRingBuffer<unsigned char> m_txAX25Data;
 	CRingBuffer<unsigned char> m_rxSerialData;
 	CRingBuffer<unsigned char> m_txSerialData;
 	CRingBuffer<unsigned char> m_rxTransparentData;
@@ -227,20 +207,14 @@ private:
 	unsigned int               m_ysfSpace;
 	unsigned int               m_p25Space;
 	unsigned int               m_nxdnSpace;
-	unsigned int               m_m17Space;
 	unsigned int               m_pocsagSpace;
 	unsigned int               m_fmSpace;
-	unsigned int               m_ax25Space;
 	bool                       m_tx;
 	bool                       m_cd;
 	bool                       m_lockout;
 	bool                       m_error;
 	unsigned char              m_mode;
 	HW_TYPE                    m_hwType;
-	int                        m_ax25RXTwist;
-	unsigned int               m_ax25TXDelay;
-	unsigned int               m_ax25SlotTime;
-	unsigned int               m_ax25PPersist;
 
 	std::string                m_fmCallsign;
 	unsigned int               m_fmCallsignSpeed;
@@ -293,6 +267,10 @@ private:
 	void printDebug();
 
 	RESP_TYPE_MMDVM getResponse();
+
+	// Added these for buffering serial data from display:
+    unsigned char              m_serialDataBuffer[256];
+    unsigned int               m_serialDataLen;
 };
 
 #endif

@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2020,2021,2023,2024 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2020,2021,2023,2024,2025 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ const unsigned int BUFFER_LENGTH = 1500U;
 
 CFMNetwork::CFMNetwork(const std::string& callsign, const std::string& protocol, const std::string& localAddress, unsigned short localPort, const std::string& gatewayAddress, unsigned short gatewayPort, unsigned int sampleRate, const std::string& squelchFile, bool debug) :
 m_callsign(callsign),
-m_protocol(FMNP_USRP),
+m_protocol(FM_NETWORK_PROTOCOL::USRP),
 m_socket(localAddress, localPort),
 m_addr(),
 m_addrLen(0U),
@@ -46,10 +46,10 @@ m_enabled(false),
 m_buffer(2000U, "FM Network"),
 m_seqNo(0U),
 #if defined(HAS_SRC)
-m_resampler(NULL),
+m_resampler(nullptr),
 #endif
 m_error(0),
-m_fp(NULL)
+m_fp(nullptr)
 {
 	assert(!callsign.empty());
 	assert(gatewayPort > 0U);
@@ -65,9 +65,9 @@ m_fp(NULL)
 		m_callsign = callsign.substr(0U, pos);
 
 	if (protocol == "RAW")
-		m_protocol = FMNP_RAW;
+		m_protocol = FM_NETWORK_PROTOCOL::RAW;
 	else
-		m_protocol = FMNP_USRP;
+		m_protocol = FM_NETWORK_PROTOCOL::USRP;
 
 #if defined(HAS_SRC)
 	m_resampler = ::src_new(SRC_SINC_FASTEST, 1, &m_error);
@@ -90,10 +90,10 @@ bool CFMNetwork::open()
 
 	LogMessage("Opening FM network connection");
 
-	if (m_protocol == FMNP_RAW) {
+	if (m_protocol == FM_NETWORK_PROTOCOL::RAW) {
 		if (!m_squelchFile.empty()) {
 			m_fp = ::fopen(m_squelchFile.c_str(), "wb");
-			if (m_fp == NULL) {
+			if (m_fp == nullptr) {
 #if !defined(_WIN32) && !defined(_WIN64)
 				LogError("Cannot open the squelch file: %s, errno=%d", m_squelchFile.c_str(), errno);
 #else
@@ -104,22 +104,24 @@ bool CFMNetwork::open()
 		}
 	}
 
-	if ((m_protocol == FMNP_RAW) && (m_sampleRate != MMDVM_SAMPLERATE)) {
+#if !defined(HAS_SRC)
+	if ((m_protocol == FM_NETWORK_PROTOCOL::RAW) && (m_sampleRate != MMDVM_SAMPLERATE)) {
 		LogError("The resampler needed for non-native sample rates has not been included");
 		return false;
 	}
+#endif
 
 	return m_socket.open(m_addr);
 }
 
 bool CFMNetwork::writeData(const float* data, unsigned int nSamples)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 	assert(nSamples > 0U);
 
-	if (m_protocol == FMNP_USRP)
+	if (m_protocol == FM_NETWORK_PROTOCOL::USRP)
 		return writeUSRPData(data, nSamples);
-	else if (m_protocol == FMNP_RAW)
+	else if (m_protocol == FM_NETWORK_PROTOCOL::RAW)
 		return writeRawData(data, nSamples);
 	else
 		return false;
@@ -127,7 +129,7 @@ bool CFMNetwork::writeData(const float* data, unsigned int nSamples)
 
 bool CFMNetwork::writeUSRPData(const float* data, unsigned int nSamples)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 	assert(nSamples > 0U);
 
 	if (m_seqNo == 0U) {
@@ -201,7 +203,7 @@ bool CFMNetwork::writeUSRPData(const float* data, unsigned int nSamples)
 
 bool CFMNetwork::writeRawData(const float* in, unsigned int nIn)
 {
-	assert(in != NULL);
+	assert(in != nullptr);
 	assert(nIn > 0U);
 
 	if (m_seqNo == 0U) {
@@ -262,7 +264,7 @@ bool CFMNetwork::writeRawData(const float* in, unsigned int nIn)
 
 bool CFMNetwork::writeEnd()
 {
-	if (m_protocol == FMNP_USRP)
+	if (m_protocol == FM_NETWORK_PROTOCOL::USRP)
 		return writeUSRPEnd();
 	else
 		return writeRawEnd();
@@ -336,7 +338,7 @@ bool CFMNetwork::writeRawEnd()
 {
 	m_seqNo = 0U;
 
-	if (m_fp != NULL) {
+	if (m_fp != nullptr) {
 		size_t n = ::fwrite("Z", 1, 1, m_fp);
 		if (n != 1) {
 #if !defined(_WIN32) && !defined(_WIN64)
@@ -364,13 +366,13 @@ void CFMNetwork::clock(unsigned int ms)
 		return;
 
 	// Check if the data is for us
-	if (m_protocol == FMNP_USRP) {
-		if (!CUDPSocket::match(addr, m_addr, IMT_ADDRESS_AND_PORT)) {
+	if (m_protocol == FM_NETWORK_PROTOCOL::USRP) {
+		if (!CUDPSocket::match(addr, m_addr, IPMATCHTYPE::ADDRESS_AND_PORT)) {
 			LogMessage("FM packet received from an invalid source");
 			return;
 		}
 	} else {
-		if (!CUDPSocket::match(addr, m_addr, IMT_ADDRESS_ONLY)) {
+		if (!CUDPSocket::match(addr, m_addr, IPMATCHTYPE::ADDRESS_ONLY)) {
 			LogMessage("FM packet received from an invalid source");
 			return;
 		}
@@ -382,7 +384,7 @@ void CFMNetwork::clock(unsigned int ms)
 	if (m_debug)
 		CUtils::dump(1U, "FM Network Data Received", buffer, length);
 
-	if (m_protocol == FMNP_USRP) {
+	if (m_protocol == FM_NETWORK_PROTOCOL::USRP) {
 		// Invalid packet type?
 		if (::memcmp(buffer, "USRP", 4U) != 0)
 			return;
@@ -398,14 +400,14 @@ void CFMNetwork::clock(unsigned int ms)
 
 		if (type == 0U)
 			m_buffer.addData(buffer + 32U, length - 32U);
-	} else if (m_protocol == FMNP_RAW) {
+	} else if (m_protocol == FM_NETWORK_PROTOCOL::RAW) {
 		m_buffer.addData(buffer, length);
 	}
 }
 
 unsigned int CFMNetwork::readData(float* out, unsigned int nOut)
 {
-	assert(out != NULL);
+	assert(out != nullptr);
 	assert(nOut > 0U);
 
 	unsigned int bytes = m_buffer.dataSize() / sizeof(unsigned short);
@@ -413,7 +415,7 @@ unsigned int CFMNetwork::readData(float* out, unsigned int nOut)
 		return 0U;
 
 #if defined(HAS_SRC)
-	if ((m_protocol == FMNP_RAW) && (m_sampleRate != MMDVM_SAMPLERATE)) {
+	if ((m_protocol == FM_NETWORK_PROTOCOL::RAW) && (m_sampleRate != MMDVM_SAMPLERATE)) {
 		unsigned int nIn = (nOut * m_sampleRate) / MMDVM_SAMPLERATE;
 
 		if (bytes < nIn) {
@@ -472,9 +474,9 @@ void CFMNetwork::close()
 {
 	m_socket.close();
 
-	if (m_fp != NULL) {
+	if (m_fp != nullptr) {
 		::fclose(m_fp);
-		m_fp = NULL;
+		m_fp = nullptr;
 	}
 
 	LogMessage("Closing FM network connection");
@@ -544,7 +546,7 @@ bool CFMNetwork::writeUSRPStart()
 	buffer[length++] = 0x08U;
 
 	// TLV Length
-	buffer[length++] = 3U + 4U + 3U + 1U + 1U + m_callsign.size() + 1U;
+	buffer[length++] = 3U + 4U + 3U + 1U + 1U + (unsigned char)m_callsign.size() + 1U;
 
 	// DMR Id
 	buffer[length++] = 0x00U;
@@ -589,7 +591,7 @@ bool CFMNetwork::writeUSRPStart()
 
 bool CFMNetwork::writeRawStart()
 {
-	if (m_fp != NULL) {
+	if (m_fp != nullptr) {
 		size_t n = ::fwrite("O", 1, 1, m_fp);
 		if (n != 1) {
 #if !defined(_WIN32) && !defined(_WIN64)

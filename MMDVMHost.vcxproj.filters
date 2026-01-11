@@ -191,9 +191,6 @@
     <ClInclude Include="BCH.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RS241213.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="SerialPort.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -275,40 +272,10 @@
     <ClInclude Include="UserDBentry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AX25Control.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AX25Network.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="NXDNIcomNetwork.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="NXDNKenwoodNetwork.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="M17Defines.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="M17Control.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="M17Network.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="M17LSF.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="M17CRC.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="M17Convolution.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="M17Utils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AX25Defines.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FMNetwork.h">
@@ -348,6 +315,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SMeter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RS634717.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RS.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -511,9 +484,6 @@
     <ClCompile Include="BCH.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RS241213.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SerialPort.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -589,34 +559,10 @@
     <ClCompile Include="UserDBentry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="AX25Control.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="AX25Network.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="NXDNIcomNetwork.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="NXDNKenwoodNetwork.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="M17Control.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="M17Network.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="M17CRC.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="M17Utils.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="M17LSF.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="M17Convolution.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FMNetwork.cpp">
@@ -656,6 +602,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SMeter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RS634717.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

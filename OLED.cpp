@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2016,2017,2018,2020,2023 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2016,2017,2018,2020,2023,2025 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -148,27 +148,6 @@ const unsigned char logo_NXDN_bmp[] =
 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
 };
 
-// Logo M17_sm, 128x16px
-const unsigned char logo_M17_bmp[] =
-{
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x62, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x67, 0x37, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xe7, 0x33, 0xe0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xef, 0x70, 0xe0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xee, 0xf0, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xff, 0xf1, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x7f, 0x31, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x77, 0x33, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x77, 0x37, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0x67, 0x36, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x60, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-};
-
 // Logo POCASG/DAPNET, 128x16px
 const unsigned char logo_POCSAG_bmp[] =
 {
@@ -239,9 +218,9 @@ bool COLED::open()
 
 	OLED_statusbar();
 
-	m_display.setCursor(0, OLED_LINE4);
+	m_display.setCursor(22, OLED_LINE4);
 	m_display.setTextSize(1);
-	m_display.print("   -Initializing-");
+	m_display.print("-Initializing-");
 	m_display.display();
 
 	return true;
@@ -333,9 +312,9 @@ void COLED::setIdleInt()
 		}
 	} else { // Connected to network - no Auto-AP mode; normal display layout...
 		if (m_displayLogoScreensaver) {
-			m_display.setCursor(0, OLED_LINE2);
+			m_display.setCursor(42, OLED_LINE2);
 			m_display.setTextSize(1);
-			m_display.print("		-IDLE-");
+			m_display.print("-IDLE-");
 			m_display.setCursor(0, OLED_LINE4);
 			m_display.printf("%s", m_ipaddress.c_str());
 
@@ -391,9 +370,9 @@ void COLED::setQuitInt()
 	m_display.clearDisplay();
 	OLED_statusbar();
 
-	m_display.setCursor(0, 30);
-	m_display.setTextSize(2);
-	m_display.print(" Stopping");
+	m_display.setCursor(28, 30);
+	m_display.setTextSize(1);
+	m_display.print("Stopping...");
 
 	m_display.setTextSize(1);
 	m_display.display();
@@ -443,7 +422,7 @@ void COLED::clearDStarInt()
 {
 	m_display.fillRect(0, OLED_LINE3, m_display.width(),m_display.height(), BLACK); //clear everything beneath the logo
 
-	m_display.setCursor(40, OLED_LINE3);
+	m_display.setCursor(37, OLED_LINE3);
 	m_display.print("Standby");
 
 	m_display.setCursor(0, OLED_LINE5);
@@ -562,7 +541,7 @@ void COLED::clearFusionInt()
 {
 	m_display.fillRect(0, OLED_LINE2, m_display.width(), m_display.height(), BLACK);
 
-	m_display.setCursor(40, OLED_LINE4);
+	m_display.setCursor(37, OLED_LINE4);
 	m_display.print("Standby");
 
 	m_display.setCursor(0, OLED_LINE6);
@@ -593,7 +572,7 @@ void COLED::clearP25Int()
 {
 	m_display.fillRect(0, OLED_LINE2, m_display.width(), m_display.height(), BLACK);
 
-	m_display.setCursor(40, OLED_LINE4);
+	m_display.setCursor(37, OLED_LINE4);
 	m_display.print("Standby");
 
 	m_display.setCursor(0, OLED_LINE6);
@@ -645,41 +624,7 @@ void COLED::clearNXDNInt()
 {
 	m_display.fillRect(0, OLED_LINE2, m_display.width(), m_display.height(), BLACK);
 
-	m_display.setCursor(40, OLED_LINE3);
-	m_display.print("Standby");
-
-	m_display.setCursor(0, OLED_LINE6);
-	m_display.printf("%s", m_ipaddress.c_str());
-
-	m_display.display();
-}
-
-void COLED::writeM17Int(const char* source, const char* dest, const char* type)
-{
-	m_mode = MODE_M17;
-
-	m_display.clearDisplay();
-	m_display.fillRect(0, OLED_LINE2, m_display.width(), m_display.height(), BLACK);
-
-	m_display.setCursor(0, OLED_LINE3);
-	m_display.printf("from: %s %s", type, source);
-
-	m_display.setCursor(0, OLED_LINE4);
-	m_display.printf("to:   %s", dest);
-
-	m_display.setCursor(0, OLED_LINE6);
-	m_display.printf("%s", m_ipaddress.c_str());
-
-	OLED_statusbar();
-
-	m_display.display();
-}
-
-void COLED::clearM17Int()
-{
-	m_display.fillRect(0, OLED_LINE2, m_display.width(), m_display.height(), BLACK);
-
-	m_display.setCursor(40, OLED_LINE4);
+	m_display.setCursor(37, OLED_LINE3);
 	m_display.print("Standby");
 
 	m_display.setCursor(0, OLED_LINE6);
@@ -754,7 +699,7 @@ void COLED::clearPOCSAGInt()
 {
 	m_display.fillRect(0, OLED_LINE2, m_display.width(), m_display.height(), BLACK);
 
-	m_display.setCursor(40, OLED_LINE3);
+	m_display.setCursor(37, OLED_LINE3);
 	m_display.print("Standby");
 
 	m_display.setCursor(0, OLED_LINE6);
@@ -767,7 +712,7 @@ void COLED::writeCWInt()
 {
 	m_display.clearDisplay();
 
-	m_display.setCursor(0, 30);
+	m_display.setCursor(15, 30);
 	m_display.setTextSize(2);
 	m_display.print("CW ID TX");
 
@@ -782,12 +727,11 @@ void COLED::clearCWInt()
 {
 	m_display.clearDisplay();
 
-	m_display.setCursor(0, OLED_LINE1);
-	m_display.setTextSize(2);
+	m_display.setCursor(17,OLED_LINE1);
 	m_display.setTextSize(1);
-	m_display.print(" -IDLE-");
-	m_display.setCursor(0, OLED_LINE3);
-	m_display.printf("%s", m_ipaddress.c_str());
+	m_display.print("-IDLE-");
+	m_display.setCursor(0,OLED_LINE3);
+	m_display.printf("%s",m_ipaddress.c_str());
 
 	// Display temperature
 	float tempCelsius = readTemperature("/sys/class/thermal/thermal_zone0/temp");
@@ -796,13 +740,14 @@ void COLED::clearCWInt()
 		float tempFahrenheit = (tempCelsius * 9.0F / 5.0F) + 32.0F;
 		m_display.setCursor(0, OLED_LINE5);
 		m_display.setTextSize(1);
-		m_display.printf("Temp: %.0fF / %.0fC ", tempFahrenheit, tempCelsius);
+		m_display.printf("CPU Temp: %.0fF/%.0fC ", tempFahrenheit, tempCelsius);
 	}
 
-	if (m_displayScroll)
-		m_display.startscrolldiagleft(0x00, 0x0f);
-
+	m_display.setTextSize(1);
 	m_display.display();
+
+	if (m_displayScroll)
+	    m_display.startscrolldiagleft(0x00,0x0f);
 }
 
 void COLED::close()
@@ -813,9 +758,9 @@ void COLED::close()
 	if (m_displayScroll)
 		m_display.startscrollleft(0x00, 0x01);
 
-	m_display.setCursor(0, OLED_LINE3);
+	m_display.setCursor(11, OLED_LINE3);
 	m_display.setTextSize(2);
-	m_display.print(" -OFFLINE-");
+	m_display.print("-OFFLINE-");
 	m_display.display();
 
 	m_display.close();
@@ -838,8 +783,6 @@ void COLED::OLED_statusbar()
 		m_display.drawBitmap(0, 0, logo_P25_bmp, 128, 16, WHITE);
 	else if (m_mode == MODE_NXDN)
 		m_display.drawBitmap(0, 0, logo_NXDN_bmp, 128, 16, WHITE);
-	else if (m_mode == MODE_M17)
-		m_display.drawBitmap(0, 0, logo_M17_bmp, 128, 16, WHITE);
 	else if (m_mode == MODE_POCSAG)
 		m_display.drawBitmap(0, 0, logo_POCSAG_bmp, 128, 16, WHITE);
 	else if (m_displayLogoScreensaver)
@@ -848,4 +791,3 @@ void COLED::OLED_statusbar()
 	if (m_displayScroll)
 		m_display.startscrollleft(0x00, 0x01);
 }
-

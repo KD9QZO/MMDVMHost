@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015-2023 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015-2023,2025 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -27,41 +27,37 @@
 
 const int BUFFER_SIZE = 500;
 
-enum SECTION {
-	SECTION_NONE,
-	SECTION_GENERAL,
-	SECTION_INFO,
-	SECTION_LOG,
-	SECTION_CWID,
-	SECTION_DMRID_LOOKUP,
-	SECTION_NXDNID_LOOKUP,
-	SECTION_MODEM,
-	SECTION_TRANSPARENT,
-	SECTION_DSTAR,
-	SECTION_DMR,
-	SECTION_FUSION,
-	SECTION_P25,
-	SECTION_NXDN,
-	SECTION_M17,
-	SECTION_POCSAG,
-	SECTION_FM,
-	SECTION_AX25,
-	SECTION_DSTAR_NETWORK,
-	SECTION_DMR_NETWORK,
-	SECTION_FUSION_NETWORK,
-	SECTION_P25_NETWORK,
-	SECTION_NXDN_NETWORK,
-	SECTION_M17_NETWORK,
-	SECTION_POCSAG_NETWORK,
-	SECTION_FM_NETWORK,
-	SECTION_AX25_NETWORK,
-	SECTION_TFTSERIAL,
-	SECTION_HD44780,
-	SECTION_NEXTION,
-	SECTION_OLED,
-	SECTION_LCDPROC,
-	SECTION_LOCK_FILE,
-	SECTION_REMOTE_CONTROL
+enum class SECTION {
+	NONE,
+	GENERAL,
+	INFO,
+	LOG,
+	CWID,
+	DMRID_LOOKUP,
+	NXDNID_LOOKUP,
+	MODEM,
+	TRANSPARENT,
+	DSTAR,
+	DMR,
+	FUSION,
+	P25,
+	NXDN,
+	POCSAG,
+	FM,
+	DSTAR_NETWORK,
+	DMR_NETWORK,
+	FUSION_NETWORK,
+	P25_NETWORK,
+	NXDN_NETWORK,
+	POCSAG_NETWORK,
+	FM_NETWORK,
+	TFTSERIAL_DISPLAY,
+	HD44780_DISPLAY,
+	NEXTION_DISPLAY,
+	OLED_DISPLAY,
+	LCDPROC_DISPLAY,
+	LOCK_FILE,
+	REMOTE_CONTROL
 };
 
 CConf::CConf(const std::string& file) :
@@ -119,10 +115,8 @@ m_modemDMRTXLevel(50.0F),
 m_modemYSFTXLevel(50.0F),
 m_modemP25TXLevel(50.0F),
 m_modemNXDNTXLevel(50.0F),
-m_modemM17TXLevel(50.0F),
 m_modemPOCSAGTXLevel(50.0F),
 m_modemFMTXLevel(50.0F),
-m_modemAX25TXLevel(50.0F),
 m_modemRSSIMappingFile(),
 m_modemUseCOSAsLockout(false),
 m_modemTrace(false),
@@ -139,12 +133,12 @@ m_dstarBlackList(),
 m_dstarWhiteList(),
 m_dstarAckReply(true),
 m_dstarAckTime(750U),
-m_dstarAckMessage(DSTAR_ACK_BER),
+m_dstarAckMessage(DSTAR_ACK::BER),
 m_dstarErrorReply(true),
 m_dstarRemoteGateway(false),
 m_dstarModeHang(10U),
 m_dmrEnabled(false),
-m_dmrBeacons(DMR_BEACONS_OFF),
+m_dmrBeacons(DMR_BEACONS::OFF),
 m_dmrBeaconInterval(60U),
 m_dmrBeaconDuration(3U),
 m_dmrId(0U),
@@ -160,7 +154,8 @@ m_dmrSlot2TGWhiteList(),
 m_dmrCallHang(10U),
 m_dmrTXHang(4U),
 m_dmrModeHang(10U),
-m_dmrOVCM(DMR_OVCM_OFF),
+m_dmrOVCM(DMR_OVCM::OFF),
+m_dmrProtect(false),
 m_fusionEnabled(false),
 m_fusionLowDeviation(false),
 m_fusionRemoteGateway(false),
@@ -182,12 +177,6 @@ m_nxdnSelfOnly(false),
 m_nxdnRemoteGateway(false),
 m_nxdnTXHang(5U),
 m_nxdnModeHang(10U),
-m_m17Enabled(false),
-m_m17CAN(0U),
-m_m17SelfOnly(false),
-m_m17AllowEncryption(false),
-m_m17TXHang(5U),
-m_m17ModeHang(10U),
 m_pocsagEnabled(false),
 m_pocsagFrequency(0U),
 m_fmEnabled(false),
@@ -226,12 +215,6 @@ m_fmRFAudioBoost(1U),
 m_fmMaxDevLevel(90.0F),
 m_fmExtAudioBoost(1U),
 m_fmModeHang(10U),
-m_ax25Enabled(false),
-m_ax25TXDelay(300U),
-m_ax25RXTwist(6),
-m_ax25SlotTime(30U),
-m_ax25PPersist(128U),
-m_ax25Trace(false),
 m_dstarNetworkEnabled(false),
 m_dstarGatewayAddress(),
 m_dstarGatewayPort(0U),
@@ -274,13 +257,6 @@ m_nxdnLocalAddress(),
 m_nxdnLocalPort(0U),
 m_nxdnNetworkModeHang(3U),
 m_nxdnNetworkDebug(false),
-m_m17NetworkEnabled(false),
-m_m17GatewayAddress(),
-m_m17GatewayPort(0U),
-m_m17LocalAddress(),
-m_m17LocalPort(0U),
-m_m17NetworkModeHang(3U),
-m_m17NetworkDebug(false),
 m_pocsagNetworkEnabled(false),
 m_pocsagGatewayAddress(),
 m_pocsagGatewayPort(0U),
@@ -302,10 +278,6 @@ m_fmTXAudioGain(1.0F),
 m_fmRXAudioGain(1.0F),
 m_fmNetworkModeHang(3U),
 m_fmNetworkDebug(false),
-m_ax25NetworkEnabled(false),
-m_ax25NetworkPort(),
-m_ax25NetworkSpeed(9600U),
-m_ax25NetworkDebug(false),
 m_tftSerialPort("/dev/ttyAMA0"),
 m_tftSerialBrightness(50U),
 m_tftSerialScreenLayout(0U),
@@ -355,97 +327,89 @@ CConf::~CConf()
 bool CConf::read()
 {
 	FILE* fp = ::fopen(m_file.c_str(), "rt");
-	if (fp == NULL) {
+	if (fp == nullptr) {
 		::fprintf(stderr, "Couldn't open the .ini file - %s\n", m_file.c_str());
 		return false;
 	}
 
-	SECTION section = SECTION_NONE;
+	SECTION section = SECTION::NONE;
 
 	char buffer[BUFFER_SIZE];
-	while (::fgets(buffer, BUFFER_SIZE, fp) != NULL) {
+	while (::fgets(buffer, BUFFER_SIZE, fp) != nullptr) {
 		if (buffer[0U] == '#')
 			continue;
 
 		if (buffer[0U] == '[') {
 			if (::strncmp(buffer, "[General]", 9U) == 0)
-				section = SECTION_GENERAL;
+				section = SECTION::GENERAL;
 			else if (::strncmp(buffer, "[Info]", 6U) == 0)
-				section = SECTION_INFO;
+				section = SECTION::INFO;
 			else if (::strncmp(buffer, "[Log]", 5U) == 0)
-				section = SECTION_LOG;
+				section = SECTION::LOG;
 			else if (::strncmp(buffer, "[CW Id]", 7U) == 0)
-				section = SECTION_CWID;
+				section = SECTION::CWID;
 			else if (::strncmp(buffer, "[DMR Id Lookup]", 15U) == 0)
-				section = SECTION_DMRID_LOOKUP;
+				section = SECTION::DMRID_LOOKUP;
 			else if (::strncmp(buffer, "[NXDN Id Lookup]", 16U) == 0)
-				section = SECTION_NXDNID_LOOKUP;
+				section = SECTION::NXDNID_LOOKUP;
 			else if (::strncmp(buffer, "[Modem]", 7U) == 0)
-				section = SECTION_MODEM;
+				section = SECTION::MODEM;
 			else if (::strncmp(buffer, "[Transparent Data]", 18U) == 0)
-				section = SECTION_TRANSPARENT;
+				section = SECTION::TRANSPARENT;
 			else if (::strncmp(buffer, "[D-Star]", 8U) == 0)
-				section = SECTION_DSTAR;
+				section = SECTION::DSTAR;
 			else if (::strncmp(buffer, "[DMR]", 5U) == 0)
-				section = SECTION_DMR;
+				section = SECTION::DMR;
 			else if (::strncmp(buffer, "[System Fusion]", 15U) == 0)
-				section = SECTION_FUSION;
+				section = SECTION::FUSION;
 			else if (::strncmp(buffer, "[P25]", 5U) == 0)
-				section = SECTION_P25;
+				section = SECTION::P25;
 			else if (::strncmp(buffer, "[NXDN]", 6U) == 0)
-				section = SECTION_NXDN;
-			else if (::strncmp(buffer, "[M17]", 5U) == 0)
-				section = SECTION_M17;
+				section = SECTION::NXDN;
 			else if (::strncmp(buffer, "[POCSAG]", 8U) == 0)
-				section = SECTION_POCSAG;
+				section = SECTION::POCSAG;
 			else if (::strncmp(buffer, "[FM]", 4U) == 0)
-				section = SECTION_FM;
-			else if (::strncmp(buffer, "[AX.25]", 7U) == 0)
-				section = SECTION_AX25;
+				section = SECTION::FM;
 			else if (::strncmp(buffer, "[D-Star Network]", 16U) == 0)
-				section = SECTION_DSTAR_NETWORK;
+				section = SECTION::DSTAR_NETWORK;
 			else if (::strncmp(buffer, "[DMR Network]", 13U) == 0)
-				section = SECTION_DMR_NETWORK;
+				section = SECTION::DMR_NETWORK;
 			else if (::strncmp(buffer, "[System Fusion Network]", 23U) == 0)
-				section = SECTION_FUSION_NETWORK;
+				section = SECTION::FUSION_NETWORK;
 			else if (::strncmp(buffer, "[P25 Network]", 13U) == 0)
-				section = SECTION_P25_NETWORK;
+				section = SECTION::P25_NETWORK;
 			else if (::strncmp(buffer, "[NXDN Network]", 14U) == 0)
-				section = SECTION_NXDN_NETWORK;
-			else if (::strncmp(buffer, "[M17 Network]", 13U) == 0)
-				section = SECTION_M17_NETWORK;
+				section = SECTION::NXDN_NETWORK;
 			else if (::strncmp(buffer, "[POCSAG Network]", 16U) == 0)
-				section = SECTION_POCSAG_NETWORK;
+				section = SECTION::POCSAG_NETWORK;
 			else if (::strncmp(buffer, "[FM Network]", 12U) == 0)
-				section = SECTION_FM_NETWORK;
-			else if (::strncmp(buffer, "[AX.25 Network]", 15U) == 0)
-				section = SECTION_AX25_NETWORK;
+				section = SECTION::FM_NETWORK;
 			else if (::strncmp(buffer, "[TFT Serial]", 12U) == 0)
-				section = SECTION_TFTSERIAL;
+				section = SECTION::TFTSERIAL_DISPLAY;
 			else if (::strncmp(buffer, "[HD44780]", 9U) == 0)
-				section = SECTION_HD44780;
+				section = SECTION::HD44780_DISPLAY;
 			else if (::strncmp(buffer, "[Nextion]", 9U) == 0)
-				section = SECTION_NEXTION;
+				section = SECTION::NEXTION_DISPLAY;
 			else if (::strncmp(buffer, "[OLED]", 6U) == 0)
-				section = SECTION_OLED;
+				section = SECTION::OLED_DISPLAY;
 			else if (::strncmp(buffer, "[LCDproc]", 9U) == 0)
-				section = SECTION_LCDPROC;
+				section = SECTION::LCDPROC_DISPLAY;
 			else if (::strncmp(buffer, "[Lock File]", 11U) == 0)
-				section = SECTION_LOCK_FILE;
+				section = SECTION::LOCK_FILE;
 			else if (::strncmp(buffer, "[Remote Control]", 16U) == 0)
-				section = SECTION_REMOTE_CONTROL;
+				section = SECTION::REMOTE_CONTROL;
 			else
-				section = SECTION_NONE;
+				section = SECTION::NONE;
 
 			continue;
 		}
 
 		char* key = ::strtok(buffer, " \t=\r\n");
-		if (key == NULL)
+		if (key == nullptr)
 			continue;
 
-		char* value = ::strtok(NULL, "\r\n");
-		if (value == NULL)
+		char* value = ::strtok(nullptr, "\r\n");
+		if (value == nullptr)
 			continue;
 
 		// Remove quotes from the value
@@ -457,7 +421,7 @@ bool CConf::read()
 			char *p;
 
 			// if value is not quoted, remove after # (to make comment)
-			if ((p = strchr(value, '#')) != NULL)
+			if ((p = strchr(value, '#')) != nullptr)
 				*p = '\0';
 
 			// remove trailing tab/space
@@ -465,7 +429,7 @@ bool CConf::read()
 				*p = '\0';
 		}
 
-		if (section == SECTION_GENERAL) {
+		if (section == SECTION::GENERAL) {
 			if (::strcmp(key, "Callsign") == 0) {
 				// Convert the callsign to upper case
 				for (unsigned int i = 0U; value[i] != 0; i++)
@@ -478,17 +442,17 @@ bool CConf::read()
 			else if (::strcmp(key, "Duplex") == 0)
 				m_duplex = ::atoi(value) == 1;
 			else if (::strcmp(key, "ModeHang") == 0)
-				m_dstarNetworkModeHang = m_dmrNetworkModeHang = m_fusionNetworkModeHang = m_p25NetworkModeHang = m_nxdnNetworkModeHang = m_m17NetworkModeHang = m_fmNetworkModeHang = 
-				m_dstarModeHang        = m_dmrModeHang        = m_fusionModeHang        = m_p25ModeHang        = m_nxdnModeHang        = m_m17ModeHang        = m_fmModeHang        = (unsigned int)::atoi(value);
+				m_dstarNetworkModeHang = m_dmrNetworkModeHang = m_fusionNetworkModeHang = m_p25NetworkModeHang = m_nxdnNetworkModeHang = m_fmNetworkModeHang = 
+				m_dstarModeHang        = m_dmrModeHang        = m_fusionModeHang        = m_p25ModeHang        = m_nxdnModeHang        = m_fmModeHang        = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "RFModeHang") == 0)
-				m_dstarModeHang = m_dmrModeHang = m_fusionModeHang = m_p25ModeHang = m_nxdnModeHang = m_m17ModeHang = m_fmModeHang = (unsigned int)::atoi(value);
+				m_dstarModeHang = m_dmrModeHang = m_fusionModeHang = m_p25ModeHang = m_nxdnModeHang = m_fmModeHang = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "NetModeHang") == 0)
-				m_dstarNetworkModeHang = m_dmrNetworkModeHang = m_fusionNetworkModeHang = m_p25NetworkModeHang = m_nxdnNetworkModeHang = m_m17NetworkModeHang = m_fmNetworkModeHang = (unsigned int)::atoi(value);
+				m_dstarNetworkModeHang = m_dmrNetworkModeHang = m_fusionNetworkModeHang = m_p25NetworkModeHang = m_nxdnNetworkModeHang = m_fmNetworkModeHang = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "Display") == 0)
 				m_display = value;
 			else if (::strcmp(key, "Daemon") == 0)
 				m_daemon = ::atoi(value) == 1;
-		} else if (section == SECTION_INFO) {
+		} else if (section == SECTION::INFO) {
 			if (::strcmp(key, "TXFrequency") == 0)
 				m_pocsagFrequency = m_txFrequency = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "RXFrequency") == 0)
@@ -507,7 +471,7 @@ bool CConf::read()
 				m_description = value;
 			else if (::strcmp(key, "URL") == 0)
 				m_url = value;
-		} else if (section == SECTION_LOG) {
+		} else if (section == SECTION::LOG) {
 			if (::strcmp(key, "FilePath") == 0)
 				m_logFilePath = value;
 			else if (::strcmp(key, "FileRoot") == 0)
@@ -518,7 +482,7 @@ bool CConf::read()
 				m_logDisplayLevel = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "FileRotate") == 0)
 				m_logFileRotate = ::atoi(value) == 1;
-		} else if (section == SECTION_CWID) {
+		} else if (section == SECTION::CWID) {
 			if (::strcmp(key, "Enable") == 0)
 				m_cwIdEnabled = ::atoi(value) == 1;
 			else if (::strcmp(key, "Time") == 0)
@@ -529,17 +493,17 @@ bool CConf::read()
 					value[i] = ::toupper(value[i]);
 				m_cwIdCallsign = value;
 			}
-		} else if (section == SECTION_DMRID_LOOKUP) {
+		} else if (section == SECTION::DMRID_LOOKUP) {
 			if (::strcmp(key, "File") == 0)
 				m_dmrIdLookupFile = value;
 			else if (::strcmp(key, "Time") == 0)
 				m_dmrIdLookupTime = (unsigned int)::atoi(value);
-		} else if (section == SECTION_NXDNID_LOOKUP) {
+		} else if (section == SECTION::NXDNID_LOOKUP) {
 			if (::strcmp(key, "File") == 0)
 				m_nxdnIdLookupFile = value;
 			else if (::strcmp(key, "Time") == 0)
 				m_nxdnIdLookupTime = (unsigned int)::atoi(value);
-		} else if (section == SECTION_MODEM) {
+		} else if (section == SECTION::MODEM) {
 			if (::strcmp(key, "Protocol") == 0)
 				m_modemProtocol = value;
 			else if (::strcmp(key, "UARTPort") == 0)
@@ -549,7 +513,7 @@ bool CConf::read()
 			else if (::strcmp(key, "I2CPort") == 0)
 				m_modemI2CPort = value;
 			else if (::strcmp(key, "I2CAddress") == 0)
-				m_modemI2CAddress = (unsigned int)::strtoul(value, NULL, 16);
+				m_modemI2CAddress = (unsigned int)::strtoul(value, nullptr, 16);
 			else if (::strcmp(key, "ModemAddress") == 0)
 				m_modemModemAddress = value;
 			else if (::strcmp(key, "ModemPort") == 0)
@@ -565,7 +529,7 @@ bool CConf::read()
 			else if (::strcmp(key, "PTTInvert") == 0)
 				m_modemPTTInvert = ::atoi(value) == 1;
 			else if (::strcmp(key, "TXDelay") == 0)
-				m_ax25TXDelay = m_modemTXDelay = (unsigned int)::atoi(value);
+				m_modemTXDelay = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "DMRDelay") == 0)
 				m_modemDMRDelay = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "RXOffset") == 0)
@@ -581,7 +545,7 @@ bool CConf::read()
 			else if (::strcmp(key, "RXLevel") == 0)
 				m_modemRXLevel = float(::atof(value));
 			else if (::strcmp(key, "TXLevel") == 0)
-				m_modemAX25TXLevel = m_modemFMTXLevel = m_modemCWIdTXLevel = m_modemDStarTXLevel = m_modemDMRTXLevel = m_modemYSFTXLevel = m_modemP25TXLevel = m_modemNXDNTXLevel = m_modemM17TXLevel = m_modemPOCSAGTXLevel = float(::atof(value));
+				m_modemFMTXLevel = m_modemCWIdTXLevel = m_modemDStarTXLevel = m_modemDMRTXLevel = m_modemYSFTXLevel = m_modemP25TXLevel = m_modemNXDNTXLevel = m_modemPOCSAGTXLevel = float(::atof(value));
 			else if (::strcmp(key, "CWIdTXLevel") == 0)
 				m_modemCWIdTXLevel = float(::atof(value));
 			else if (::strcmp(key, "D-StarTXLevel") == 0)
@@ -594,14 +558,10 @@ bool CConf::read()
 				m_modemP25TXLevel = float(::atof(value));
 			else if (::strcmp(key, "NXDNTXLevel") == 0)
 				m_modemNXDNTXLevel = float(::atof(value));
-			else if (::strcmp(key, "M17TXLevel") == 0)
-				m_modemM17TXLevel = float(::atof(value));
 			else if (::strcmp(key, "POCSAGTXLevel") == 0)
 				m_modemPOCSAGTXLevel = float(::atof(value));
 			else if (::strcmp(key, "FMTXLevel") == 0)
 				m_modemFMTXLevel = float(::atof(value));
-			else if (::strcmp(key, "AX25TXLevel") == 0)
-				m_modemAX25TXLevel = float(::atof(value));
 			else if (::strcmp(key, "RSSIMappingFile") == 0)
 				m_modemRSSIMappingFile = value;
 			else if (::strcmp(key, "UseCOSAsLockout") == 0)
@@ -610,7 +570,7 @@ bool CConf::read()
 				m_modemTrace = ::atoi(value) == 1;
 			else if (::strcmp(key, "Debug") == 0)
 				m_modemDebug = ::atoi(value) == 1;
-		} else if (section == SECTION_TRANSPARENT) {
+		} else if (section == SECTION::TRANSPARENT) {
 			if (::strcmp(key, "Enable") == 0)
 				m_transparentEnabled = ::atoi(value) == 1;
 			else if (::strcmp(key, "RemoteAddress") == 0)
@@ -621,7 +581,7 @@ bool CConf::read()
 				m_transparentLocalPort = (unsigned short)::atoi(value);
 			else if (::strcmp(key, "SendFrameType") == 0)
 				m_transparentSendFrameType = (unsigned int)::atoi(value);
-		} else if (section == SECTION_DSTAR) {
+		} else if (section == SECTION::DSTAR) {
 			if (::strcmp(key, "Enable") == 0)
 				m_dstarEnabled = ::atoi(value) == 1;
 			else if (::strcmp(key, "Module") == 0) {
@@ -633,7 +593,7 @@ bool CConf::read()
 				m_dstarSelfOnly = ::atoi(value) == 1;
 			else if (::strcmp(key, "BlackList") == 0) {
 				char* p = ::strtok(value, ",\r\n");
-				while (p != NULL) {
+				while (p != nullptr) {
 					if (::strlen(p) > 0U) {
 						for (unsigned int i = 0U; p[i] != 0; i++)
 							p[i] = ::toupper(p[i]);
@@ -641,11 +601,11 @@ bool CConf::read()
 						callsign.resize(DSTAR_LONG_CALLSIGN_LENGTH, ' ');
 						m_dstarBlackList.push_back(callsign);
 					}
-					p = ::strtok(NULL, ",\r\n");
+					p = ::strtok(nullptr, ",\r\n");
 				}
 			} else if (::strcmp(key, "WhiteList") == 0) {
 				char* p = ::strtok(value, ",\r\n");
-				while (p != NULL) {
+				while (p != nullptr) {
 					if (::strlen(p) > 0U) {
 						for (unsigned int i = 0U; p[i] != 0; i++)
 							p[i] = ::toupper(p[i]);
@@ -653,29 +613,29 @@ bool CConf::read()
 						callsign.resize(DSTAR_LONG_CALLSIGN_LENGTH, ' ');
 						m_dstarWhiteList.push_back(callsign);
 					}
-					p = ::strtok(NULL, ",\r\n");
+					p = ::strtok(nullptr, ",\r\n");
 				}
 			} else if (::strcmp(key, "AckReply") == 0)
 				m_dstarAckReply = ::atoi(value) == 1;
 			else if (::strcmp(key, "AckTime") == 0)
 				m_dstarAckTime = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "AckMessage") == 0) {
-				m_dstarAckMessage = (DSTAR_ACK_MESSAGE)::atoi(value);
-				if (m_dstarAckMessage != DSTAR_ACK_BER && m_dstarAckMessage != DSTAR_ACK_RSSI && m_dstarAckMessage != DSTAR_ACK_SMETER)
-					m_dstarAckMessage = DSTAR_ACK_BER;
+				m_dstarAckMessage = DSTAR_ACK(::atoi(value));
+				if ((m_dstarAckMessage != DSTAR_ACK::BER) && (m_dstarAckMessage != DSTAR_ACK::RSSI) && (m_dstarAckMessage != DSTAR_ACK::SMETER))
+					m_dstarAckMessage = DSTAR_ACK::BER;
 			} else if (::strcmp(key, "ErrorReply") == 0)
 				m_dstarErrorReply = ::atoi(value) == 1;
 			else if (::strcmp(key, "RemoteGateway") == 0)
 				m_dstarRemoteGateway = ::atoi(value) == 1;
 			else if (::strcmp(key, "ModeHang") == 0)
 				m_dstarModeHang = (unsigned int)::atoi(value);
-		} else if (section == SECTION_DMR) {
+		} else if (section == SECTION::DMR) {
 			if (::strcmp(key, "Enable") == 0)
 				m_dmrEnabled = ::atoi(value) == 1;
 			else if (::strcmp(key, "Beacons") == 0)
-				m_dmrBeacons = ::atoi(value) == 1 ? DMR_BEACONS_NETWORK : DMR_BEACONS_OFF;
+				m_dmrBeacons = ::atoi(value) == 1 ? DMR_BEACONS::NETWORK : DMR_BEACONS::OFF;
 			else if (::strcmp(key, "BeaconInterval") == 0) {
-				m_dmrBeacons = m_dmrBeacons != DMR_BEACONS_OFF ? DMR_BEACONS_TIMED : DMR_BEACONS_OFF;
+				m_dmrBeacons = m_dmrBeacons != DMR_BEACONS::OFF ? DMR_BEACONS::TIMED : DMR_BEACONS::OFF;
 				m_dmrBeaconInterval = (unsigned int)::atoi(value);
 			} else if (::strcmp(key, "BeaconDuration") == 0)
 				m_dmrBeaconDuration = (unsigned int)::atoi(value);
@@ -691,43 +651,43 @@ bool CConf::read()
 				m_dmrDumpTAData = ::atoi(value) == 1;
 			else if (::strcmp(key, "Prefixes") == 0) {
 				char* p = ::strtok(value, ",\r\n");
-				while (p != NULL) {
+				while (p != nullptr) {
 					unsigned int prefix = (unsigned int)::atoi(p);
 					if (prefix > 0U && prefix <= 999U)
 						m_dmrPrefixes.push_back(prefix);
-					p = ::strtok(NULL, ",\r\n");
+					p = ::strtok(nullptr, ",\r\n");
 				}
 			} else if (::strcmp(key, "BlackList") == 0) {
 				char* p = ::strtok(value, ",\r\n");
-				while (p != NULL) {
+				while (p != nullptr) {
 					unsigned int id = (unsigned int)::atoi(p);
 					if (id > 0U)
 						m_dmrBlackList.push_back(id);
-					p = ::strtok(NULL, ",\r\n");
+					p = ::strtok(nullptr, ",\r\n");
 				}
 			} else if (::strcmp(key, "WhiteList") == 0) {
 				char* p = ::strtok(value, ",\r\n");
-				while (p != NULL) {
+				while (p != nullptr) {
 					unsigned int id = (unsigned int)::atoi(p);
 					if (id > 0U)
 						m_dmrWhiteList.push_back(id);
-					p = ::strtok(NULL, ",\r\n");
+					p = ::strtok(nullptr, ",\r\n");
 				}
 			} else if (::strcmp(key, "Slot1TGWhiteList") == 0) {
 				char* p = ::strtok(value, ",\r\n");
-				while (p != NULL) {
+				while (p != nullptr) {
 					unsigned int id = (unsigned int)::atoi(p);
 					if (id > 0U)
 						m_dmrSlot1TGWhiteList.push_back(id);
-					p = ::strtok(NULL, ",\r\n");
+					p = ::strtok(nullptr, ",\r\n");
 				}
 			} else if (::strcmp(key, "Slot2TGWhiteList") == 0) {
 				char* p = ::strtok(value, ",\r\n");
-				while (p != NULL) {
+				while (p != nullptr) {
 					unsigned int id = (unsigned int)::atoi(p);
 					if (id > 0U)
 						m_dmrSlot2TGWhiteList.push_back(id);
-					p = ::strtok(NULL, ",\r\n");
+					p = ::strtok(nullptr, ",\r\n");
 				}
 			} else if (::strcmp(key, "TXHang") == 0)
 				m_dmrTXHang = (unsigned int)::atoi(value);
@@ -738,23 +698,24 @@ bool CConf::read()
 			else if (::strcmp(key, "OVCM") == 0) {
 				switch (::atoi(value)) {
 				case 1:
-					m_dmrOVCM = DMR_OVCM_RX_ON;
+					m_dmrOVCM = DMR_OVCM::RX_ON;
 					break;
 				case 2:
-					m_dmrOVCM = DMR_OVCM_TX_ON;
+					m_dmrOVCM = DMR_OVCM::TX_ON;
 					break;
 				case 3:
-					m_dmrOVCM = DMR_OVCM_ON;
+					m_dmrOVCM = DMR_OVCM::ON;
 					break;
 				case 4:
-					m_dmrOVCM = DMR_OVCM_FORCE_OFF;
+					m_dmrOVCM = DMR_OVCM::FORCE_OFF;
 					break;
 				default:
-					m_dmrOVCM = DMR_OVCM_OFF;
+					m_dmrOVCM = DMR_OVCM::OFF;
 					break;
 				}
-			}
-		} else if (section == SECTION_FUSION) {
+			} else if (::strcmp(key, "Protect") == 0)
+				m_dmrProtect = ::atoi(value) == 1;
+		} else if (section == SECTION::FUSION) {
 			if (::strcmp(key, "Enable") == 0)
 				m_fusionEnabled = ::atoi(value) == 1;
 			else if (::strcmp(key, "LowDeviation") == 0)
@@ -767,13 +728,13 @@ bool CConf::read()
 				m_fusionTXHang = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "ModeHang") == 0)
 				m_fusionModeHang = (unsigned int)::atoi(value);
-		} else if (section == SECTION_P25) {
+		} else if (section == SECTION::P25) {
 			if (::strcmp(key, "Enable") == 0)
 				m_p25Enabled = ::atoi(value) == 1;
 			else if (::strcmp(key, "Id") == 0)
 				m_p25Id = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "NAC") == 0)
-				m_p25NAC = (unsigned int)::strtoul(value, NULL, 16);
+				m_p25NAC = (unsigned int)::strtoul(value, nullptr, 16);
 			else if (::strcmp(key, "OverrideUIDCheck") == 0)
 				m_p25OverrideUID = ::atoi(value) == 1;
 			else if (::strcmp(key, "SelfOnly") == 0)
@@ -784,7 +745,7 @@ bool CConf::read()
 				m_p25TXHang = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "ModeHang") == 0)
 				m_p25ModeHang = (unsigned int)::atoi(value);
-		} else if (section == SECTION_NXDN) {
+		} else if (section == SECTION::NXDN) {
 			if (::strcmp(key, "Enable") == 0)
 				m_nxdnEnabled = ::atoi(value) == 1;
 			else if (::strcmp(key, "Id") == 0)
@@ -799,25 +760,12 @@ bool CConf::read()
 				m_nxdnTXHang = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "ModeHang") == 0)
 				m_nxdnModeHang = (unsigned int)::atoi(value);
-		} else if (section == SECTION_M17) {
-			if (::strcmp(key, "Enable") == 0)
-				m_m17Enabled = ::atoi(value) == 1;
-			else if (::strcmp(key, "CAN") == 0)
-				m_m17CAN = (unsigned int)::atoi(value);
-			else if (::strcmp(key, "SelfOnly") == 0)
-				m_m17SelfOnly = ::atoi(value) == 1;
-			else if (::strcmp(key, "AllowEncryption") == 0)
-				m_m17AllowEncryption = ::atoi(value) == 1;
-			else if (::strcmp(key, "TXHang") == 0)
-				m_m17TXHang = (unsigned int)::atoi(value);
-			else if (::strcmp(key, "ModeHang") == 0)
-				m_m17ModeHang = (unsigned int)::atoi(value);
-		} else if (section == SECTION_POCSAG) {
+		} else if (section == SECTION::POCSAG) {
 			if (::strcmp(key, "Enable") == 0)
 				m_pocsagEnabled = ::atoi(value) == 1;
 			else if (::strcmp(key, "Frequency") == 0)
 				m_pocsagFrequency = (unsigned int)::atoi(value);
-		} else if (section == SECTION_FM) {
+		} else if (section == SECTION::FM) {
 			if (::strcmp(key, "Enable") == 0)
 				m_fmEnabled = ::atoi(value) == 1;
 			else if (::strcmp(key, "Callsign") == 0) {
@@ -903,20 +851,7 @@ bool CConf::read()
 				m_fmExtAudioBoost = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "ModeHang") == 0)
 				m_fmModeHang = (unsigned int)::atoi(value);
-		} else if (section == SECTION_AX25) {
-			if (::strcmp(key, "Enable") == 0)
-				m_ax25Enabled = ::atoi(value) == 1;
-			else if (::strcmp(key, "TXDelay") == 0)
-				m_ax25TXDelay = (unsigned int)::atoi(value);
-			else if (::strcmp(key, "RXTwist") == 0)
-				m_ax25RXTwist = ::atoi(value);
-			else if (::strcmp(key, "SlotTime") == 0)
-				m_ax25SlotTime = (unsigned int)::atoi(value);
-			else if (::strcmp(key, "PPersist") == 0)
-				m_ax25PPersist = (unsigned int)::atoi(value);
-			else if (::strcmp(key, "Trace") == 0)
-				m_ax25Trace = ::atoi(value) == 1;
-		} else if (section == SECTION_DSTAR_NETWORK) {
+		} else if (section == SECTION::DSTAR_NETWORK) {
 			if (::strcmp(key, "Enable") == 0)
 				m_dstarNetworkEnabled = ::atoi(value) == 1;
 			else if (::strcmp(key, "GatewayAddress") == 0)
@@ -931,7 +866,7 @@ bool CConf::read()
 				m_dstarNetworkModeHang = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "Debug") == 0)
 				m_dstarNetworkDebug = ::atoi(value) == 1;
-		} else if (section == SECTION_DMR_NETWORK) {
+		} else if (section == SECTION::DMR_NETWORK) {
 			if (::strcmp(key, "Enable") == 0)
 				m_dmrNetworkEnabled = ::atoi(value) == 1;
 			else if (::strcmp(key, "Type") == 0)
@@ -958,7 +893,7 @@ bool CConf::read()
 				m_dmrNetworkSlot2 = ::atoi(value) == 1;
 			else if (::strcmp(key, "ModeHang") == 0)
 				m_dmrNetworkModeHang = (unsigned int)::atoi(value);
-		} else if (section == SECTION_FUSION_NETWORK) {
+		} else if (section == SECTION::FUSION_NETWORK) {
 			if (::strcmp(key, "Enable") == 0)
 				m_fusionNetworkEnabled = ::atoi(value) == 1;
 			else if (::strcmp(key, "LocalAddress") == 0)
@@ -973,7 +908,7 @@ bool CConf::read()
 				m_fusionNetworkModeHang = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "Debug") == 0)
 				m_fusionNetworkDebug = ::atoi(value) == 1;
-		} else if (section == SECTION_P25_NETWORK) {
+		} else if (section == SECTION::P25_NETWORK) {
 			if (::strcmp(key, "Enable") == 0)
 				m_p25NetworkEnabled = ::atoi(value) == 1;
 			else if (::strcmp(key, "GatewayAddress") == 0)
@@ -988,9 +923,11 @@ bool CConf::read()
 				m_p25NetworkModeHang = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "Debug") == 0)
 				m_p25NetworkDebug = ::atoi(value) == 1;
-		} else if (section == SECTION_NXDN_NETWORK) {
+		} else if (section == SECTION::NXDN_NETWORK) {
 			if (::strcmp(key, "Enable") == 0)
 				m_nxdnNetworkEnabled = ::atoi(value) == 1;
+			else if (::strcmp(key, "Protocol") == 0)
+				m_nxdnNetworkProtocol = value;
 			else if (::strcmp(key, "LocalAddress") == 0)
 				m_nxdnLocalAddress = value;
 			else if (::strcmp(key, "LocalPort") == 0)
@@ -1003,22 +940,7 @@ bool CConf::read()
 				m_nxdnNetworkModeHang = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "Debug") == 0)
 				m_nxdnNetworkDebug = ::atoi(value) == 1;
-		} else if (section == SECTION_M17_NETWORK) {
-			if (::strcmp(key, "Enable") == 0)
-				m_m17NetworkEnabled = ::atoi(value) == 1;
-			else if (::strcmp(key, "LocalAddress") == 0)
-				m_m17LocalAddress = value;
-			else if (::strcmp(key, "LocalPort") == 0)
-				m_m17LocalPort = (unsigned short)::atoi(value);
-			else if (::strcmp(key, "GatewayAddress") == 0)
-				m_m17GatewayAddress = value;
-			else if (::strcmp(key, "GatewayPort") == 0)
-				m_m17GatewayPort = (unsigned short)::atoi(value);
-			else if (::strcmp(key, "ModeHang") == 0)
-				m_m17NetworkModeHang = (unsigned int)::atoi(value);
-			else if (::strcmp(key, "Debug") == 0)
-				m_m17NetworkDebug = ::atoi(value) == 1;
-		} else if (section == SECTION_POCSAG_NETWORK) {
+		} else if (section == SECTION::POCSAG_NETWORK) {
 			if (::strcmp(key, "Enable") == 0)
 				m_pocsagNetworkEnabled = ::atoi(value) == 1;
 			else if (::strcmp(key, "LocalAddress") == 0)
@@ -1033,7 +955,7 @@ bool CConf::read()
 				m_pocsagNetworkModeHang = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "Debug") == 0)
 				m_pocsagNetworkDebug = ::atoi(value) == 1;
-		} else if (section == SECTION_FM_NETWORK) {
+		} else if (section == SECTION::FM_NETWORK) {
 			if (::strcmp(key, "Enable") == 0)
 				m_fmNetworkEnabled = ::atoi(value) == 1;
 			else if (::strcmp(key, "Protocol") == 0)
@@ -1062,29 +984,20 @@ bool CConf::read()
 				m_fmNetworkModeHang = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "Debug") == 0)
 				m_fmNetworkDebug = ::atoi(value) == 1;
-		} else if (section == SECTION_AX25_NETWORK) {
-			if (::strcmp(key, "Enable") == 0)
-				m_ax25NetworkEnabled = ::atoi(value) == 1;
-			else if (::strcmp(key, "Port") == 0)
-				m_ax25NetworkPort = value;
-			else if (::strcmp(key, "Speed") == 0)
-				m_ax25NetworkSpeed = (unsigned int)::atoi(value);
-			else if (::strcmp(key, "Debug") == 0)
-				m_ax25NetworkDebug = ::atoi(value) == 1;
-		} else if (section == SECTION_TFTSERIAL) {
+		} else if (section == SECTION::TFTSERIAL_DISPLAY) {
 			if (::strcmp(key, "Port") == 0)
 				m_tftSerialPort = value;
 			else if (::strcmp(key, "Brightness") == 0)
 				m_tftSerialBrightness = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "ScreenLayout") == 0)
 				m_tftSerialScreenLayout = (unsigned int)::atoi(value);
-		} else if (section == SECTION_HD44780) {
+		} else if (section == SECTION::HD44780_DISPLAY) {
 			if (::strcmp(key, "Rows") == 0)
 				m_hd44780Rows = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "Columns") == 0)
 				m_hd44780Columns = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "I2CAddress") == 0)
-				m_hd44780i2cAddress = (unsigned int)::strtoul(value, NULL, 16);
+				m_hd44780i2cAddress = (unsigned int)::strtoul(value, nullptr, 16);
 			else if (::strcmp(key, "PWM") == 0)
 				m_hd44780PWM = ::atoi(value) == 1;
 			else if (::strcmp(key, "PWMPin") == 0)
@@ -1099,13 +1012,13 @@ bool CConf::read()
 				m_hd44780UTC = ::atoi(value) == 1;
 			else if (::strcmp(key, "Pins") == 0) {
 				char* p = ::strtok(value, ",\r\n");
-				while (p != NULL) {
+				while (p != nullptr) {
 					unsigned int pin = (unsigned int)::atoi(p);
 					m_hd44780Pins.push_back(pin);
-					p = ::strtok(NULL, ",\r\n");
+					p = ::strtok(nullptr, ",\r\n");
 				}
 			}
-		} else if (section == SECTION_NEXTION) {
+		} else if (section == SECTION::NEXTION_DISPLAY) {
 			if (::strcmp(key, "Port") == 0)
 				m_nextionPort = value;
 			else if (::strcmp(key, "Brightness") == 0)
@@ -1117,14 +1030,14 @@ bool CConf::read()
 			else if (::strcmp(key, "IdleBrightness") == 0)
 				m_nextionIdleBrightness = (unsigned int)::atoi(value);
 			else if (::strcmp(key, "ScreenLayout") == 0)
-				m_nextionScreenLayout = (unsigned int)::strtoul(value, NULL, 0);
+				m_nextionScreenLayout = (unsigned int)::strtoul(value, nullptr, 0);
 			else if (::strcmp(key, "DisplayTempInFahrenheit") == 0)
 				m_nextionTempInFahrenheit = ::atoi(value) == 1;
 			else if (::strcmp(key, "NextionOutput") == 0)
 				m_nextionOutput = ::atoi(value) == 1;
 			else if (::strcmp(key, "NextionUDPPort") == 0)
 				m_nextionUDPPort = (unsigned short)::atoi(value);
-		} else if (section == SECTION_OLED) {
+		} else if (section == SECTION::OLED_DISPLAY) {
 			if (::strcmp(key, "Type") == 0)
 				m_oledType = (unsigned char)::atoi(value);
 			else if (::strcmp(key, "Brightness") == 0)
@@ -1137,7 +1050,7 @@ bool CConf::read()
 				m_oledRotate = ::atoi(value) == 1;
 			else if (::strcmp(key, "LogoScreensaver") == 0)
 				m_oledLogoScreensaver = ::atoi(value) == 1;
-		} else if (section == SECTION_LCDPROC) {
+		} else if (section == SECTION::LCDPROC_DISPLAY) {
 			if (::strcmp(key, "Address") == 0)
 				m_lcdprocAddress = value;
 			else if (::strcmp(key, "Port") == 0)
@@ -1150,12 +1063,12 @@ bool CConf::read()
 				m_lcdprocUTC = ::atoi(value) == 1;
 			else if (::strcmp(key, "DimOnIdle") == 0)
 				m_lcdprocDimOnIdle = ::atoi(value) == 1;
-		} else if (section == SECTION_LOCK_FILE) {
+		} else if (section == SECTION::LOCK_FILE) {
 			if (::strcmp(key, "Enable") == 0)
 				m_lockFileEnabled = ::atoi(value) == 1;
 			else if (::strcmp(key, "File") == 0)
 				m_lockFileName = value;
-		} else if (section == SECTION_REMOTE_CONTROL) {
+		} else if (section == SECTION::REMOTE_CONTROL) {
 			if (::strcmp(key, "Enable") == 0)
 				m_remoteControlEnabled = ::atoi(value) == 1;
 			else if (::strcmp(key, "Port") == 0)
@@ -1433,11 +1346,6 @@ float CConf::getModemNXDNTXLevel() const
 	return m_modemNXDNTXLevel;
 }
 
-float CConf::getModemM17TXLevel() const
-{
-	return m_modemM17TXLevel;
-}
-
 float CConf::getModemPOCSAGTXLevel() const
 {
 	return m_modemPOCSAGTXLevel;
@@ -1446,11 +1354,6 @@ float CConf::getModemPOCSAGTXLevel() const
 float CConf::getModemFMTXLevel() const
 {
 	return m_modemFMTXLevel;
-}
-
-float CConf::getModemAX25TXLevel() const
-{
-	return m_modemAX25TXLevel;
 }
 
 std::string CConf::getModemRSSIMappingFile () const
@@ -1533,7 +1436,7 @@ unsigned int CConf::getDStarAckTime() const
 	return m_dstarAckTime;
 }
 
-DSTAR_ACK_MESSAGE CConf::getDStarAckMessage() const
+DSTAR_ACK CConf::getDStarAckMessage() const
 {
 	return m_dstarAckMessage;
 }
@@ -1638,9 +1541,14 @@ unsigned int CConf::getDMRModeHang() const
 	return m_dmrModeHang;
 }
 
-DMR_OVCM_TYPES CConf::getDMROVCM() const
+DMR_OVCM CConf::getDMROVCM() const
 {
 	return m_dmrOVCM;
+}
+
+bool CConf::getDMRProtect() const
+{
+	return m_dmrProtect;
 }
 
 bool CConf::getFusionEnabled() const
@@ -1746,36 +1654,6 @@ unsigned int CConf::getNXDNTXHang() const
 unsigned int CConf::getNXDNModeHang() const
 {
 	return m_nxdnModeHang;
-}
-
-bool CConf::getM17Enabled() const
-{
-	return m_m17Enabled;
-}
-
-unsigned int CConf::getM17CAN() const
-{
-	return m_m17CAN;
-}
-
-bool CConf::getM17SelfOnly() const
-{
-	return m_m17SelfOnly;
-}
-
-bool CConf::getM17AllowEncryption() const
-{
-	return m_m17AllowEncryption;
-}
-
-unsigned int CConf::getM17TXHang() const
-{
-	return m_m17TXHang;
-}
-
-unsigned int CConf::getM17ModeHang() const
-{
-	return m_m17ModeHang;
 }
 
 bool CConf::getPOCSAGEnabled() const
@@ -1966,36 +1844,6 @@ unsigned int CConf::getFMExtAudioBoost() const
 unsigned int CConf::getFMModeHang() const
 {
 	return m_fmModeHang;
-}
-
-bool CConf::getAX25Enabled() const
-{
-	return m_ax25Enabled;
-}
-
-unsigned int CConf::getAX25TXDelay() const
-{
-	return m_ax25TXDelay;
-}
-
-int CConf::getAX25RXTwist() const
-{
-	return m_ax25RXTwist;
-}
-
-unsigned int CConf::getAX25SlotTime() const
-{
-	return m_ax25SlotTime;
-}
-
-unsigned int CConf::getAX25PPersist() const
-{
-	return m_ax25PPersist;
-}
-
-bool CConf::getAX25Trace() const
-{
-	return m_ax25Trace;
 }
 
 bool CConf::getDStarNetworkEnabled() const
@@ -2208,41 +2056,6 @@ bool CConf::getNXDNNetworkDebug() const
 	return m_nxdnNetworkDebug;
 }
 
-bool CConf::getM17NetworkEnabled() const
-{
-	return m_m17NetworkEnabled;
-}
-
-std::string CConf::getM17GatewayAddress() const
-{
-	return m_m17GatewayAddress;
-}
-
-unsigned short CConf::getM17GatewayPort() const
-{
-	return m_m17GatewayPort;
-}
-
-std::string CConf::getM17LocalAddress() const
-{
-	return m_m17LocalAddress;
-}
-
-unsigned short CConf::getM17LocalPort() const
-{
-	return m_m17LocalPort;
-}
-
-unsigned int CConf::getM17NetworkModeHang() const
-{
-	return m_m17NetworkModeHang;
-}
-
-bool CConf::getM17NetworkDebug() const
-{
-	return m_m17NetworkDebug;
-}
-
 bool CConf::getPOCSAGNetworkEnabled() const
 {
 	return m_pocsagNetworkEnabled;
@@ -2346,26 +2159,6 @@ unsigned int CConf::getFMNetworkModeHang() const
 bool CConf::getFMNetworkDebug() const
 {
 	return m_fmNetworkDebug;
-}
-
-bool CConf::getAX25NetworkEnabled() const
-{
-	return m_ax25NetworkEnabled;
-}
-
-std::string CConf::getAX25NetworkPort() const
-{
-	return m_ax25NetworkPort;
-}
-
-unsigned int CConf::getAX25NetworkSpeed() const
-{
-	return m_ax25NetworkSpeed;
-}
-
-bool CConf::getAX25NetworkDebug() const
-{
-	return m_ax25NetworkDebug;
 }
 
 std::string CConf::getTFTSerialPort() const

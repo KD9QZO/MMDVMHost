@@ -1,5 +1,5 @@
 /*
- *	Copyright (C) 2015-2021 Jonathan Naylor, G4KLX
+ *	Copyright (C) 2015-2021,2025 Jonathan Naylor, G4KLX
  *
  *	This program is free software; you can redistribute it and/or modify
  *	it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 #include <cassert>
 #include <algorithm>
 
-CDMRControl::CDMRControl(unsigned int id, unsigned int colorCode, unsigned int callHang, bool selfOnly, bool embeddedLCOnly, bool dumpTAData, const std::vector<unsigned int>& prefixes, const std::vector<unsigned int>& blacklist, const std::vector<unsigned int>& whitelist, const std::vector<unsigned int>& slot1TGWhitelist, const std::vector<unsigned int>& slot2TGWhitelist, unsigned int timeout, CModem* modem, IDMRNetwork* network, CDisplay* display, bool duplex, CDMRLookup* lookup, CRSSIInterpolator* rssi, unsigned int jitter, DMR_OVCM_TYPES ovcm) :
+CDMRControl::CDMRControl(unsigned int id, unsigned int colorCode, unsigned int callHang, bool selfOnly, bool embeddedLCOnly, bool dumpTAData, const std::vector<unsigned int>& prefixes, const std::vector<unsigned int>& blacklist, const std::vector<unsigned int>& whitelist, const std::vector<unsigned int>& slot1TGWhitelist, const std::vector<unsigned int>& slot2TGWhitelist, unsigned int timeout, CModem* modem, IDMRNetwork* network, CDisplay* display, bool duplex, CDMRLookup* lookup, CRSSIInterpolator* rssi, unsigned int jitter, DMR_OVCM ovcm, bool protect) :
 m_colorCode(colorCode),
 m_modem(modem),
 m_network(network),
@@ -30,15 +30,15 @@ m_slot2(2U, timeout),
 m_lookup(lookup)
 {
 	assert(id != 0U);
-	assert(modem != NULL);
-	assert(display != NULL);
-	assert(lookup != NULL);
-	assert(rssi != NULL);
+	assert(modem != nullptr);
+	assert(display != nullptr);
+	assert(lookup != nullptr);
+	assert(rssi != nullptr);
 
 	// Load black and white lists to DMRAccessControl
 	CDMRAccessControl::init(blacklist, whitelist, slot1TGWhitelist, slot2TGWhitelist, selfOnly, prefixes, id);
 
-	CDMRSlot::init(colorCode, embeddedLCOnly, dumpTAData, callHang, modem, network, display, duplex, m_lookup, rssi, jitter, ovcm);
+	CDMRSlot::init(colorCode, embeddedLCOnly, dumpTAData, callHang, modem, network, display, duplex, m_lookup, rssi, jitter, ovcm, protect);
 }
 
 CDMRControl::~CDMRControl()
@@ -47,7 +47,7 @@ CDMRControl::~CDMRControl()
 
 bool CDMRControl::processWakeup(const unsigned char* data)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 
 	// Wakeups always come in on slot 1
 	if (data[0U] != TAG_DATA || data[1U] != (DMR_IDLE_RX | DMR_SYNC_DATA | DT_CSBK))
@@ -59,7 +59,7 @@ bool CDMRControl::processWakeup(const unsigned char* data)
 		return false;
 
 	CSBKO csbko = csbk.getCSBKO();
-	if (csbko != CSBKO_BSDWNACT)
+	if (csbko != CSBKO::BSDWNACT)
 		return false;
 
 	unsigned int srcId = csbk.getSrcId();
@@ -78,35 +78,35 @@ bool CDMRControl::processWakeup(const unsigned char* data)
 
 bool CDMRControl::writeModemSlot1(unsigned char *data, unsigned int len)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 
 	return m_slot1.writeModem(data, len);
 }
 
 bool CDMRControl::writeModemSlot2(unsigned char *data, unsigned int len)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 
 	return m_slot2.writeModem(data, len);
 }
 
 unsigned int CDMRControl::readModemSlot1(unsigned char *data)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 
 	return m_slot1.readModem(data);
 }
 
 unsigned int CDMRControl::readModemSlot2(unsigned char *data)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 
 	return m_slot2.readModem(data);
 }
 
 void CDMRControl::clock()
 {
-	if (m_network != NULL) {
+	if (m_network != nullptr) {
 		CDMRData data;
 		bool ret = m_network->read(data);
 		if (ret) {
