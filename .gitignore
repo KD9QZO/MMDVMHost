@@ -18,3 +18,4 @@ RemoteCommand
 .vscode
 *.ambe
 GitVersion.h
+*.orig
